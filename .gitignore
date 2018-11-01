@@ -2722,3 +2722,4 @@ extra/wolfssl-*
 
 # Allow
 !include/*/boost/geometry/*
+bld
