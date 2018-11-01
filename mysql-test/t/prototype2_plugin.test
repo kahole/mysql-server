@@ -1,9 +1,11 @@
 
 
+--source suite/query_rewrite_plugins/include/have_plugin_prototype2_rewrite.inc
+
 --replace_regex /\.dll/.so/
 
-eval INSTALL PLUGIN rewrite_test SONAME '$REWRITE_TEST';
+INSTALL PLUGIN prototype2_rewrite SONAME 'prototype2_rewrite.so';
 
 SELECT 'Hello plugin' as message;
 
-UNINSTALL PLUGIN rewrite_test;
+UNINSTALL PLUGIN prototype2_rewrite;

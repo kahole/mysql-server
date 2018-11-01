@@ -20,5 +20,5 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301  USA
 
-MYSQL_ADD_PLUGIN(rewrite_example rewrite_test.cc
-  MODULE_ONLY MODULE_OUTPUT_NAME "rewrite_test")
+MYSQL_ADD_PLUGIN(prototype2_rewrite prototype2_rewrite.cc
+  MODULE_ONLY MODULE_OUTPUT_NAME "prototype2_rewrite")

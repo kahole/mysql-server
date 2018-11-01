@@ -36,7 +36,7 @@
 static PSI_memory_key key_memory_rewrite_example;
 
 static PSI_memory_info all_rewrite_memory[] = {
-    {&key_memory_rewrite_example, "rewrite_example", 0, 0, PSI_DOCUMENT_ME}};
+    {&key_memory_rewrite_example, "prototype2_rewrite", 0, 0, PSI_DOCUMENT_ME}};
 
 static int plugin_init(MYSQL_PLUGIN) {
   const char *category = "sql";
@@ -90,7 +90,7 @@ static struct st_mysql_audit rewrite_example_descriptor = {
 mysql_declare_plugin(audit_log){
     MYSQL_AUDIT_PLUGIN,          /* plugin type                   */
     &rewrite_example_descriptor, /* type specific descriptor      */
-    "rewrite_test",           /* plugin name                   */
+    "prototype2_rewrite",           /* plugin name                   */
     "Kristian and Haavard",                    /* author                        */
     "An example of a query rewrite"
     " plugin that rewrites all queries"

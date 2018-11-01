@@ -1,0 +1,11 @@
+INSTALL PLUGIN prototype2_rewrite SONAME 'prototype2_rewrite.so';
+SELECT 'Hello plugin' as message;
+message
+hello plugin
+Warnings:
+Note	1105	Query 'SELECT 'Hello plugin' as message' rewritten to 'select 'hello plugin' as message' by a query rewrite plugin
+Note	1105	Query 'SHOW WARNINGS' rewritten to 'show warnings' by a query rewrite plugin
+UNINSTALL PLUGIN prototype2_rewrite;
+Warnings:
+Note	1105	Query 'UNINSTALL PLUGIN prototype2_rewrite' rewritten to 'uninstall plugin prototype2_rewrite' by a query rewrite plugin
+Warning	1620	Plugin is busy and will be uninstalled on shutdown
