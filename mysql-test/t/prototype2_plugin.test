@@ -1,0 +1,9 @@
+
+
+--replace_regex /\.dll/.so/
+
+eval INSTALL PLUGIN rewrite_test SONAME '$REWRITE_TEST';
+
+SELECT 'Hello plugin' as message;
+
+UNINSTALL PLUGIN rewrite_test;
