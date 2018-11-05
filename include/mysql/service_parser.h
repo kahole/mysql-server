@@ -280,6 +280,8 @@ int mysql_parser_get_number_params(MYSQL_THD thd);
 int mysql_parser_extract_prepared_params(MYSQL_THD thd, int *positions);
 int mysql_parser_visit_tree(MYSQL_THD thd, parse_node_visit_function processor,
                             unsigned char *arg);
+int mysql_parser_visit_tables(MYSQL_THD thd, parse_table_visit_function processor,
+                            unsigned char *arg)
 MYSQL_LEX_STRING mysql_parser_item_string(MYSQL_ITEM item);
 void mysql_parser_free_string(MYSQL_LEX_STRING string);
 MYSQL_LEX_STRING mysql_parser_get_query(MYSQL_THD thd);
