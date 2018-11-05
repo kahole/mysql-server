@@ -97,6 +97,20 @@ class Service_visitor : public Select_lex_visitor {
   }
 };
 
+class Service_table_visitor : public Select_lex_visitor {
+  parse_table_visit_function m_processor;
+  uchar *m_arg;
+
+ public:
+  Service_table_visitor(parse_table_visit_function processor, uchar *arg)
+      : m_processor(processor), m_arg(arg) {}
+
+ protected:
+  bool visit_table(TABLE_LIST *tl) {
+    return m_processor(tl, m_arg);
+  }
+};
+
 /**
   This class implements the framework needed for the callback function that
   handles conditions that may arise during parsing via the parser service.
@@ -326,6 +340,12 @@ int mysql_parser_extract_prepared_params(MYSQL_THD thd, int *positions) {
 int mysql_parser_visit_tree(MYSQL_THD thd, parse_node_visit_function processor,
                             unsigned char *arg) {
   Service_visitor visitor(processor, arg);
+  return thd->lex->accept(&visitor);
+}
+
+int mysql_parser_visit_tables(MYSQL_THD thd, parse_table_visit_function processor,
+                            unsigned char *arg) {
+  Service_table_visitor visitor(processor, arg);
   return thd->lex->accept(&visitor);
 }
 
