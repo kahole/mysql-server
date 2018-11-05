@@ -166,4 +166,3 @@ INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUE
 INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (85, "BB8", 0, 0, "none", "none", 28);
 INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (86, "Captain Phasma", 0, 0, "unknown", "female", 28);
 INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (87, "Padmé Amidala", 165, 45, "brown", "female", 8);
---sleep 99999999999

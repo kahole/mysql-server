@@ -6,6 +6,8 @@
 
 INSTALL PLUGIN prototype2_rewrite SONAME 'prototype2_rewrite.so';
 
-SELECT 'Hello plugin' as message;
+SELECT * FROM Person;
+
+#SELECT 'abc', 'def';
 
 UNINSTALL PLUGIN prototype2_rewrite;

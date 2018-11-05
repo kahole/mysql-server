@@ -25,6 +25,7 @@
 #include <mysql/plugin_audit.h>
 #include <mysql/psi/mysql_memory.h>
 #include <mysql/service_mysql_alloc.h>
+#include <mysql/service_parser.h>
 #include <string.h>
 
 #include "my_inttypes.h"
@@ -33,10 +34,11 @@
 
 /* instrument the memory allocation */
 #ifdef HAVE_PSI_INTERFACE
-static PSI_memory_key key_memory_rewrite_example;
+static PSI_memory_key key_memory_post_parse_example;
 
-static PSI_memory_info all_rewrite_memory[] = {
-    {&key_memory_rewrite_example, "prototype2_rewrite", 0, 0, PSI_DOCUMENT_ME}};
+static PSI_memory_info all_rewrite_memory[] = {{&key_memory_post_parse_example,
+                                                "prototype2_rewrite", 0, 0,
+                                                PSI_DOCUMENT_ME}};
 
 static int plugin_init(MYSQL_PLUGIN) {
   const char *category = "sql";
@@ -48,26 +50,76 @@ static int plugin_init(MYSQL_PLUGIN) {
 }
 #else
 #define plugin_init NULL
-#define key_memory_rewrite_example PSI_NOT_INSTRUMENTED
+#define key_memory_post_parse_example PSI_NOT_INSTRUMENTED
 #endif /* HAVE_PSI_INTERFACE */
 
-static int rewrite_lower(MYSQL_THD, mysql_event_class_t event_class,
-                         const void *event) {
+// int catch_literal(MYSQL_ITEM item, unsigned char *arg) {
+//   MYSQL_LEX_STRING *result_string_ptr = (MYSQL_LEX_STRING *)arg;
+//   if (result_string_ptr->str == NULL) {
+//     *result_string_ptr = mysql_parser_item_string(item);
+//     return 0;
+//   }
+//   return 1;
+// }
+
+// int catch_table(TABLE_LIST *tl, unsigned char *arg) {
+  
+//   MYSQL_LEX_STRING *result_string_ptr = (MYSQL_LEX_STRING *)arg;
+//   if (result_string_ptr->str == NULL) {
+//     //*result_string_ptr = mysql_parser_item_string(item);
+//     return 0;
+//   }
+//   return 1;
+// }
+
+// Hack
+int catch_table(MYSQL_ITEM item, unsigned char *arg) {
+
+  TABLE_LIST *tl = (TABLE_LIST*)arg;
+  
+  MYSQL_LEX_STRING *result_string_ptr = (MYSQL_LEX_STRING *)tl;
+
+  if (item == NULL)
+    return 1;
+
+  if (result_string_ptr->str == NULL) {
+    //*result_string_ptr = mysql_parser_item_string(item);
+    return 0;
+  }
+  return 1;
+}
+
+static int swap_table(MYSQL_THD thd, mysql_event_class_t event_class,
+                      const void *event) {
   if (event_class == MYSQL_AUDIT_PARSE_CLASS) {
     const struct mysql_event_parse *event_parse =
         static_cast<const struct mysql_event_parse *>(event);
-    if (event_parse->event_subclass == MYSQL_AUDIT_PARSE_PREPARSE) {
-      size_t query_length = event_parse->query.length;
-      char *rewritten_query = static_cast<char *>(
-          my_malloc(key_memory_rewrite_example, query_length + 1, MYF(0)));
 
-      for (unsigned i = 0; i < query_length + 1; i++)
-        rewritten_query[i] = tolower(event_parse->query.str[i]);
+    if (event_parse->event_subclass == MYSQL_AUDIT_PARSE_POSTPARSE) {
+      // Swap table reference from "Person" to "Planet"
+      MYSQL_LEX_STRING first_literal = {NULL, 0};
 
-      event_parse->rewritten_query->str = rewritten_query;
-      event_parse->rewritten_query->length = query_length;
-      *((int *)event_parse->flags) |=
-          (int)MYSQL_AUDIT_PARSE_REWRITE_PLUGIN_QUERY_REWRITTEN;
+      mysql_parser_visit_tree(thd, catch_table,
+                              (unsigned char *)&first_literal);
+
+      //if (first_literal.str != NULL) {
+        size_t query_length = event_parse->query.length;
+          //first_literal.length + event_parse->query.length + 23;
+
+       // first_literal.str[first_literal.length] = '\0';
+
+        char *rewritten_query = static_cast<char *>(
+            my_malloc(key_memory_post_parse_example, query_length, MYF(0)));
+        sprintf(rewritten_query, "%s",
+                /*first_literal.str, */event_parse->query.str);
+        MYSQL_LEX_STRING new_query = {rewritten_query, query_length};
+        //mysql_parser_free_string(first_literal);
+
+        mysql_parser_parse(thd, new_query, false, NULL, NULL);
+
+        *((int *)event_parse->flags) |=
+            (int)MYSQL_AUDIT_PARSE_REWRITE_PLUGIN_QUERY_REWRITTEN;
+     //}
     }
   }
 
@@ -78,7 +130,7 @@ static int rewrite_lower(MYSQL_THD, mysql_event_class_t event_class,
 static struct st_mysql_audit rewrite_example_descriptor = {
     MYSQL_AUDIT_INTERFACE_VERSION, /* interface version */
     NULL,                          /* release_thd()     */
-    rewrite_lower,                 /* event_notify()    */
+    swap_table,                    /* event_notify()    */
     {
         0,
         0,
@@ -90,11 +142,10 @@ static struct st_mysql_audit rewrite_example_descriptor = {
 mysql_declare_plugin(audit_log){
     MYSQL_AUDIT_PLUGIN,          /* plugin type                   */
     &rewrite_example_descriptor, /* type specific descriptor      */
-    "prototype2_rewrite",           /* plugin name                   */
-    "Kristian and Haavard",                    /* author                        */
+    "prototype2_rewrite",        /* plugin name                   */
+    "Kristian and Haavard",      /* author                        */
     "An example of a query rewrite"
-    " plugin that rewrites all queries"
-    " to lower case",   /* description                   */
+    " plugin that rewrites all queries", /* description                   */
     PLUGIN_LICENSE_GPL, /* license                       */
     plugin_init,        /* plugin initializer            */
     NULL,               /* plugin check uninstall        */
