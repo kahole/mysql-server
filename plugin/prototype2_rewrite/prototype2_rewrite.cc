@@ -28,6 +28,8 @@
 #include <mysql/service_parser.h>
 #include <string.h>
 
+#include "sql/table.h"
+
 #include "my_inttypes.h"
 #include "my_psi_config.h"
 #include "my_thread.h"  // my_thread_handle needed by mysql_memory.h
@@ -53,41 +55,43 @@ static int plugin_init(MYSQL_PLUGIN) {
 #define key_memory_post_parse_example PSI_NOT_INSTRUMENTED
 #endif /* HAVE_PSI_INTERFACE */
 
-// int catch_literal(MYSQL_ITEM item, unsigned char *arg) {
-//   MYSQL_LEX_STRING *result_string_ptr = (MYSQL_LEX_STRING *)arg;
-//   if (result_string_ptr->str == NULL) {
-//     *result_string_ptr = mysql_parser_item_string(item);
-//     return 0;
-//   }
-//   return 1;
-// }
+int catch_literal(MYSQL_ITEM item, unsigned char *arg) {
+  MYSQL_LEX_STRING *result_string_ptr = (MYSQL_LEX_STRING *)arg;
+  if (result_string_ptr->str == NULL) {
+    *result_string_ptr = mysql_parser_item_string(item);
+    return 0;
+  }
+  return 1;
+}
 
-// int catch_table(TABLE_LIST *tl, unsigned char *arg) {
+int catch_table(TABLE_LIST *tl, unsigned char *arg) {
   
-//   MYSQL_LEX_STRING *result_string_ptr = (MYSQL_LEX_STRING *)arg;
+  const char *result_string_ptr = tl->table_name;
+  MYSQL_LEX_STRING *result_string_ptr2 = (MYSQL_LEX_STRING *)arg;
+  if (result_string_ptr == NULL || result_string_ptr2->str == NULL) {
+    //*result_string_ptr = mysql_parser_item_string(item);
+    return 0;
+  }
+  return 1;
+}
+
+
+// // Hack
+// int catch_table(MYSQL_ITEM item, unsigned char *arg) {
+
+//   TABLE_LIST *tl = (TABLE_LIST*)arg;
+  
+//   MYSQL_LEX_STRING *result_string_ptr = (MYSQL_LEX_STRING *)tl;
+
+//   if (item == NULL)
+//     return 1;
+
 //   if (result_string_ptr->str == NULL) {
 //     //*result_string_ptr = mysql_parser_item_string(item);
 //     return 0;
 //   }
 //   return 1;
 // }
-
-// Hack
-int catch_table(MYSQL_ITEM item, unsigned char *arg) {
-
-  TABLE_LIST *tl = (TABLE_LIST*)arg;
-  
-  MYSQL_LEX_STRING *result_string_ptr = (MYSQL_LEX_STRING *)tl;
-
-  if (item == NULL)
-    return 1;
-
-  if (result_string_ptr->str == NULL) {
-    //*result_string_ptr = mysql_parser_item_string(item);
-    return 0;
-  }
-  return 1;
-}
 
 static int swap_table(MYSQL_THD thd, mysql_event_class_t event_class,
                       const void *event) {
@@ -99,8 +103,8 @@ static int swap_table(MYSQL_THD thd, mysql_event_class_t event_class,
       // Swap table reference from "Person" to "Planet"
       MYSQL_LEX_STRING first_literal = {NULL, 0};
 
-      mysql_parser_visit_tree(thd, catch_table,
-                              (unsigned char *)&first_literal);
+      mysql_parser_visit_tables(thd, catch_table, (unsigned char *)&first_literal);
+      //mysql_parser_visit_tree(thd, catch_literal, (unsigned char *)&first_literal);
 
       //if (first_literal.str != NULL) {
         size_t query_length = event_parse->query.length;

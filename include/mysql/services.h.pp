@@ -400,6 +400,9 @@ typedef int (*mysql_extract_prepared_params_t)(THD * thd, int *positions);
 typedef int (*mysql_visit_tree_t)(THD * thd,
                                   parse_node_visit_function processor,
                                   unsigned char *arg);
+typedef int (*mysql_visit_tables_t)(THD * thd,
+                                  parse_table_visit_function processor,
+                                  unsigned char *arg);
 typedef MYSQL_LEX_STRING (*mysql_item_string_t)(MYSQL_ITEM item);
 typedef void (*mysql_free_string_t)(MYSQL_LEX_STRING string);
 typedef MYSQL_LEX_STRING (*mysql_get_query_t)(THD * thd);
@@ -416,6 +419,7 @@ extern "C" struct mysql_parser_service_st {
   mysql_get_number_params_t mysql_get_number_params;
   mysql_extract_prepared_params_t mysql_extract_prepared_params;
   mysql_visit_tree_t mysql_visit_tree;
+  mysql_visit_tables_t mysql_visit_tables;
   mysql_item_string_t mysql_item_string;
   mysql_free_string_t mysql_free_string;
   mysql_get_query_t mysql_get_query;
@@ -438,6 +442,8 @@ int mysql_parser_get_statement_digest(THD * thd, unsigned char *digest);
 int mysql_parser_get_number_params(THD * thd);
 int mysql_parser_extract_prepared_params(THD * thd, int *positions);
 int mysql_parser_visit_tree(THD * thd, parse_node_visit_function processor,
+                            unsigned char *arg);
+int mysql_parser_visit_tables(THD * thd, parse_table_visit_function processor,
                             unsigned char *arg);
 MYSQL_LEX_STRING mysql_parser_item_string(MYSQL_ITEM item);
 void mysql_parser_free_string(MYSQL_LEX_STRING string);

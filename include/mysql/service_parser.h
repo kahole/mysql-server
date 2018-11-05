@@ -156,6 +156,10 @@ typedef int (*mysql_visit_tree_t)(MYSQL_THD thd,
                                   parse_node_visit_function processor,
                                   unsigned char *arg);
 
+typedef int (*mysql_visit_tables_t)(MYSQL_THD thd,
+                                  parse_table_visit_function processor,
+                                  unsigned char *arg);
+
 /**
   Renders the MYSQL_ITEM as a string and returns a reference in the form of
   a MYSQL_LEX_STRING. The string buffer is allocated by the server and must
@@ -208,6 +212,7 @@ extern "C" struct mysql_parser_service_st {
   mysql_get_number_params_t mysql_get_number_params;
   mysql_extract_prepared_params_t mysql_extract_prepared_params;
   mysql_visit_tree_t mysql_visit_tree;
+  mysql_visit_tables_t mysql_visit_tables;
   mysql_item_string_t mysql_item_string;
   mysql_free_string_t mysql_free_string;
   mysql_get_query_t mysql_get_query;
@@ -250,6 +255,9 @@ extern "C" struct mysql_parser_service_st {
 #define mysql_parser_visit_tree(thd, processor, arg) \
   mysql_parser_service->mysql_visit_tree(thd, processor, arg)
 
+#define mysql_parser_visit_tables(thd, processor, arg) \
+  mysql_parser_service->mysql_visit_tables(thd, processor, arg)
+
 #define mysql_parser_item_string(item) \
   mysql_parser_service->mysql_item_string(item)
 
@@ -281,7 +289,7 @@ int mysql_parser_extract_prepared_params(MYSQL_THD thd, int *positions);
 int mysql_parser_visit_tree(MYSQL_THD thd, parse_node_visit_function processor,
                             unsigned char *arg);
 int mysql_parser_visit_tables(MYSQL_THD thd, parse_table_visit_function processor,
-                            unsigned char *arg)
+                            unsigned char *arg);
 MYSQL_LEX_STRING mysql_parser_item_string(MYSQL_ITEM item);
 void mysql_parser_free_string(MYSQL_LEX_STRING string);
 MYSQL_LEX_STRING mysql_parser_get_query(MYSQL_THD thd);
