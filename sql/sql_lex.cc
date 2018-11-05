@@ -3341,6 +3341,7 @@ bool accept_table(TABLE_LIST *t, Select_lex_visitor *visitor) {
     return true;
   else if (t->is_derived())
     t->derived_unit()->accept(visitor);
+  visitor->visit(t);
   if (walk_item(t->join_cond(), visitor)) return true;
   return false;
 }

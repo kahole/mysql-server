@@ -32,6 +32,7 @@ class THD;
 class Item;
 #define MYSQL_THD THD *
 typedef Item *MYSQL_ITEM;
+struct TABLE_LIST;
 
 /**
   @file include/mysql/service_parser.h
@@ -51,6 +52,8 @@ typedef Item *MYSQL_ITEM;
 #define STATEMENT_TYPE_OTHER 6
 
 typedef int (*parse_node_visit_function)(MYSQL_ITEM item, unsigned char *arg);
+
+typedef int (*parse_table_visit_function)(TABLE_LIST *tl, unsigned char *arg);
 
 typedef int (*sql_condition_handler_function)(int sql_errno,
                                               const char *sqlstate,
