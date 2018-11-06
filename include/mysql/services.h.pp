@@ -375,7 +375,7 @@ class Item;
 typedef Item *MYSQL_ITEM;
 struct TABLE_LIST;
 typedef int (*parse_node_visit_function)(MYSQL_ITEM item, unsigned char *arg);
-typedef int (*parse_table_visit_function)(TABLE_LIST *tl, unsigned char *arg);
+typedef int (*parse_table_visit_function)(TABLE_LIST *tl, const char *arg);
 typedef int (*sql_condition_handler_function)(int sql_errno,
                                               const char *sqlstate,
                                               const char *msg, void *state);
