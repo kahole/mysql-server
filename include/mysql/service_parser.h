@@ -158,7 +158,7 @@ typedef int (*mysql_visit_tree_t)(MYSQL_THD thd,
 
 typedef int (*mysql_visit_tables_t)(MYSQL_THD thd,
                                   parse_table_visit_function processor,
-                                  unsigned char *arg);
+                                  const char *arg);
 
 /**
   Renders the MYSQL_ITEM as a string and returns a reference in the form of

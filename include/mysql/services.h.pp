@@ -402,7 +402,7 @@ typedef int (*mysql_visit_tree_t)(THD * thd,
                                   unsigned char *arg);
 typedef int (*mysql_visit_tables_t)(THD * thd,
                                   parse_table_visit_function processor,
-                                  unsigned char *arg);
+                                  const char *arg);
 typedef MYSQL_LEX_STRING (*mysql_item_string_t)(MYSQL_ITEM item);
 typedef void (*mysql_free_string_t)(MYSQL_LEX_STRING string);
 typedef MYSQL_LEX_STRING (*mysql_get_query_t)(THD * thd);
