@@ -444,7 +444,7 @@ int mysql_parser_extract_prepared_params(THD * thd, int *positions);
 int mysql_parser_visit_tree(THD * thd, parse_node_visit_function processor,
                             unsigned char *arg);
 int mysql_parser_visit_tables(THD * thd, parse_table_visit_function processor,
-                            unsigned char *arg);
+                            const char *arg);
 MYSQL_LEX_STRING mysql_parser_item_string(MYSQL_ITEM item);
 void mysql_parser_free_string(MYSQL_LEX_STRING string);
 MYSQL_LEX_STRING mysql_parser_get_query(THD * thd);
