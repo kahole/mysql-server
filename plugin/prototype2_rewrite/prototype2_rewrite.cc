@@ -64,9 +64,11 @@ int catch_literal(MYSQL_ITEM item, unsigned char *arg) {
   return 1;
 }
 
-int catch_table(TABLE_LIST *tl, const char *arg) {
+int catch_table(TABLE_LIST *tl, char *arg) {
   
-  arg = tl->table_name;
+  *arg = *(tl->table_name);
+
+  return 0;
   // if (result_string_ptr == NULL || result_string_ptr2->str == NULL) {
     //*result_string_ptr = mysql_parser_item_string(item);
     // return 0;
@@ -100,9 +102,9 @@ static int swap_table(MYSQL_THD thd, mysql_event_class_t event_class,
 
     if (event_parse->event_subclass == MYSQL_AUDIT_PARSE_POSTPARSE) {
       // Swap table reference from "Person" to "Planet"
-      // MYSQL_LEX_STRING first_literal = {NULL, 0};
+      //MYSQL_LEX_STRING first_literal = {NULL, 0};
 
-      const char *first_table_name;
+      char *first_table_name = NULL;
 
       mysql_parser_visit_tables(thd, catch_table, first_table_name);
       //mysql_parser_visit_tree(thd, catch_literal, (unsigned char *)&first_literal);

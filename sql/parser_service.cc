@@ -99,10 +99,10 @@ class Service_visitor : public Select_lex_visitor {
 
 class Service_table_visitor : public Select_lex_visitor {
   parse_table_visit_function m_processor;
-  const char *m_arg;
+  char *m_arg;
 
  public:
-  Service_table_visitor(parse_table_visit_function processor, const char *arg)
+  Service_table_visitor(parse_table_visit_function processor, char *arg)
       : m_processor(processor), m_arg(arg) {}
 
  protected:
@@ -344,7 +344,7 @@ int mysql_parser_visit_tree(MYSQL_THD thd, parse_node_visit_function processor,
 }
 
 int mysql_parser_visit_tables(MYSQL_THD thd, parse_table_visit_function processor,
-                            const char *arg) {
+                            char *arg) {
   Service_table_visitor visitor(processor, arg);
   return thd->lex->accept(&visitor);
 }
