@@ -4,10 +4,38 @@
 
 --replace_regex /\.dll/.so/
 
+
+#--------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------------
+
+#CREATE TABLE Planet (
+#  id INT UNSIGNED PRIMARY KEY,
+#  name VARCHAR(30) NOT NULL,
+#  diameter INT UNSIGNED,
+#  population BIGINT UNSIGNED
+#);
+#
+#CREATE TABLE Person (
+#  id INT UNSIGNED PRIMARY KEY,
+#  name VARCHAR(30) NOT NULL,
+#  height INT UNSIGNED,
+#  mass INT UNSIGNED,
+#  hair_color VARCHAR(20),
+#  gender VARCHAR(20),
+#  homeworld INT UNSIGNED,
+#  FOREIGN KEY (homeworld) REFERENCES Planet(id)
+#);
+
+#--------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------------
+
+
+
 INSTALL PLUGIN prototype2_rewrite SONAME 'prototype2_rewrite.so';
 
-SELECT * FROM Person;
 
-#SELECT 'abc', 'def';
+#SELECT * FROM Person;
+
+SELECT 'abc', 'def';
 
 UNINSTALL PLUGIN prototype2_rewrite;
