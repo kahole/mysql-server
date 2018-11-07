@@ -69,18 +69,13 @@ int catch_literal(MYSQL_ITEM item, unsigned char *arg) {
 }
 
 int catch_table(TABLE_LIST *tl, unsigned char *arg) {
-  //*arg = *(tl->table_name);
 
   const char **result_string_ptr = (const char **)arg;
-  // if (**result_string_ptr == NULL) {
   if (tl != NULL) {
     *(result_string_ptr) = tl->table_name;
-
     return 0;
   }
   return 1;
-  //}
-  // return 1;
 }
 
 static int swap_table(MYSQL_THD thd, mysql_event_class_t event_class,
@@ -90,37 +85,31 @@ static int swap_table(MYSQL_THD thd, mysql_event_class_t event_class,
         static_cast<const struct mysql_event_parse *>(event);
 
     if (event_parse->event_subclass == MYSQL_AUDIT_PARSE_POSTPARSE) {
-      // Swap table reference from "Person" to "Planet"
+
       // MYSQL_LEX_STRING first_literal = {NULL, 0};
 
       const char *first_table_name;
 
-      // if (thd->lex->m_sql_cmd != NULL) {
       if (is_select_query(&(event_parse->query))) {
         mysql_parser_visit_tables(thd, catch_table,
                                   (unsigned char *)&first_table_name);
         // mysql_parser_visit_tree(thd, catch_literal, (unsigned char
         // *)&first_literal);
       }
-      // }
-
-      // if (first_literal.str != NULL) {
-      // size_t query_length = event_parse->query.length;
-      // first_literal.length + event_parse->query.length + 23;
-
-      // first_literal.str[first_literal.length] = '\0';
 
       size_t sw_query_length = 20;
       size_t query_length = event_parse->query.length;
 
       char *rewritten_query;
 
-      if (strcmp(event_parse->query.str, "SELECT * FROM Person") == 0) {
+      // Swap table reference from "Person" to "Planet"
+
+      if (strcmp(first_table_name, "person") == 0) {
         rewritten_query = static_cast<char *>(
           my_malloc(key_memory_post_parse_example, sw_query_length, MYF(0)));
         sprintf(rewritten_query, "SELECT * FROM Planet");
 
-      } else if (strcmp(first_table_name, "Planet") == 0) {
+      } else if (strcmp(first_table_name, "planet") == 0) {
         rewritten_query = static_cast<char *>(
           my_malloc(key_memory_post_parse_example, sw_query_length, MYF(0)));
         sprintf(rewritten_query, "SELECT * FROM %s", "Person");

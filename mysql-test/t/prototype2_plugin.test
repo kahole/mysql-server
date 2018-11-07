@@ -186,6 +186,6 @@ INSTALL PLUGIN prototype2_rewrite SONAME 'prototype2_rewrite.so';
 
 SELECT * FROM Person;
 
-SELECT 'abc', 'def';
+SELECT * FROM Planet;
 
 UNINSTALL PLUGIN prototype2_rewrite;
