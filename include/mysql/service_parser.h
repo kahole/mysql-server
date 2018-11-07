@@ -53,7 +53,7 @@ struct TABLE_LIST;
 
 typedef int (*parse_node_visit_function)(MYSQL_ITEM item, unsigned char *arg);
 
-typedef int (*parse_table_visit_function)(TABLE_LIST *tl, char *arg);
+typedef int (*parse_table_visit_function)(TABLE_LIST *tl, unsigned char *arg);
 
 typedef int (*sql_condition_handler_function)(int sql_errno,
                                               const char *sqlstate,
@@ -158,7 +158,7 @@ typedef int (*mysql_visit_tree_t)(MYSQL_THD thd,
 
 typedef int (*mysql_visit_tables_t)(MYSQL_THD thd,
                                   parse_table_visit_function processor,
-                                  char *arg);
+                                  unsigned char *arg);
 
 /**
   Renders the MYSQL_ITEM as a string and returns a reference in the form of
@@ -289,7 +289,7 @@ int mysql_parser_extract_prepared_params(MYSQL_THD thd, int *positions);
 int mysql_parser_visit_tree(MYSQL_THD thd, parse_node_visit_function processor,
                             unsigned char *arg);
 int mysql_parser_visit_tables(MYSQL_THD thd, parse_table_visit_function processor,
-                            char *arg);
+                            unsigned char *arg);
 MYSQL_LEX_STRING mysql_parser_item_string(MYSQL_ITEM item);
 void mysql_parser_free_string(MYSQL_LEX_STRING string);
 MYSQL_LEX_STRING mysql_parser_get_query(MYSQL_THD thd);
