@@ -55,6 +55,10 @@ static int plugin_init(MYSQL_PLUGIN) {
 #define key_memory_post_parse_example PSI_NOT_INSTRUMENTED
 #endif /* HAVE_PSI_INTERFACE */
 
+static bool is_select_query(const MYSQL_LEX_CSTRING *query) {
+  return (query->str[0] == 'S' && query->str[1] == 'E');
+}
+
 int catch_literal(MYSQL_ITEM item, unsigned char *arg) {
   MYSQL_LEX_STRING *result_string_ptr = (MYSQL_LEX_STRING *)arg;
   if (result_string_ptr->str == NULL) {
@@ -65,20 +69,18 @@ int catch_literal(MYSQL_ITEM item, unsigned char *arg) {
 }
 
 int catch_table(TABLE_LIST *tl, unsigned char *arg) {
-  
   //*arg = *(tl->table_name);
 
   const char **result_string_ptr = (const char **)arg;
-  //if (**result_string_ptr == NULL) {
+  // if (**result_string_ptr == NULL) {
   if (tl != NULL) {
-
     *(result_string_ptr) = tl->table_name;
 
     return 0;
   }
   return 1;
   //}
-  //return 1;
+  // return 1;
 }
 
 static int swap_table(MYSQL_THD thd, mysql_event_class_t event_class,
@@ -89,31 +91,55 @@ static int swap_table(MYSQL_THD thd, mysql_event_class_t event_class,
 
     if (event_parse->event_subclass == MYSQL_AUDIT_PARSE_POSTPARSE) {
       // Swap table reference from "Person" to "Planet"
-      //MYSQL_LEX_STRING first_literal = {NULL, 0};
+      // MYSQL_LEX_STRING first_literal = {NULL, 0};
 
-      const char * first_table_name;
+      const char *first_table_name;
 
-      mysql_parser_visit_tables(thd, catch_table, (unsigned char *)&first_table_name);
-      //mysql_parser_visit_tree(thd, catch_literal, (unsigned char *)&first_literal);
+      // if (thd->lex->m_sql_cmd != NULL) {
+      if (is_select_query(&(event_parse->query))) {
+        mysql_parser_visit_tables(thd, catch_table,
+                                  (unsigned char *)&first_table_name);
+        // mysql_parser_visit_tree(thd, catch_literal, (unsigned char
+        // *)&first_literal);
+      }
+      // }
 
-      //if (first_literal.str != NULL) {
-        size_t query_length = event_parse->query.length;
-          //first_literal.length + event_parse->query.length + 23;
+      // if (first_literal.str != NULL) {
+      // size_t query_length = event_parse->query.length;
+      // first_literal.length + event_parse->query.length + 23;
 
-       // first_literal.str[first_literal.length] = '\0';
+      // first_literal.str[first_literal.length] = '\0';
 
-        char *rewritten_query = static_cast<char *>(
-            my_malloc(key_memory_post_parse_example, query_length, MYF(0)));
+      size_t sw_query_length = 20;
+      size_t query_length = event_parse->query.length;
+
+      char *rewritten_query;
+
+      if (strcmp(event_parse->query.str, "SELECT * FROM Person") == 0) {
+        rewritten_query = static_cast<char *>(
+          my_malloc(key_memory_post_parse_example, sw_query_length, MYF(0)));
+        sprintf(rewritten_query, "SELECT * FROM Planet");
+
+      } else if (strcmp(first_table_name, "Planet") == 0) {
+        rewritten_query = static_cast<char *>(
+          my_malloc(key_memory_post_parse_example, sw_query_length, MYF(0)));
+        sprintf(rewritten_query, "SELECT * FROM %s", "Person");
+
+      } else {
+        rewritten_query = static_cast<char *>(
+          my_malloc(key_memory_post_parse_example, query_length, MYF(0)));
         sprintf(rewritten_query, "%s",
-                /*first_literal.str, */event_parse->query.str);
-        MYSQL_LEX_STRING new_query = {rewritten_query, query_length};
-        //mysql_parser_free_string(first_literal);
+                /*first_literal.str, */ event_parse->query.str);
+      }
 
-        mysql_parser_parse(thd, new_query, false, NULL, NULL);
+      MYSQL_LEX_STRING new_query = {rewritten_query, query_length};
+      // mysql_parser_free_string(first_literal);
 
-        *((int *)event_parse->flags) |=
-            (int)MYSQL_AUDIT_PARSE_REWRITE_PLUGIN_QUERY_REWRITTEN;
-     //}
+      mysql_parser_parse(thd, new_query, false, NULL, NULL);
+
+      *((int *)event_parse->flags) |=
+          (int)MYSQL_AUDIT_PARSE_REWRITE_PLUGIN_QUERY_REWRITTEN;
+      //}
     }
   }
 
@@ -140,13 +166,13 @@ mysql_declare_plugin(audit_log){
     "Kristian and Haavard",      /* author                        */
     "An example of a query rewrite"
     " plugin that rewrites all queries", /* description                   */
-    PLUGIN_LICENSE_GPL, /* license                       */
-    plugin_init,        /* plugin initializer            */
-    NULL,               /* plugin check uninstall        */
-    NULL,               /* plugin deinitializer          */
-    0x0002,             /* version                       */
-    NULL,               /* status variables              */
-    NULL,               /* system variables              */
-    NULL,               /* reserverd                     */
-    0                   /* flags                         */
+    PLUGIN_LICENSE_GPL,                  /* license                       */
+    plugin_init,                         /* plugin initializer            */
+    NULL,                                /* plugin check uninstall        */
+    NULL,                                /* plugin deinitializer          */
+    0x0002,                              /* version                       */
+    NULL,                                /* status variables              */
+    NULL,                                /* system variables              */
+    NULL,                                /* reserverd                     */
+    0                                    /* flags                         */
 } mysql_declare_plugin_end;
