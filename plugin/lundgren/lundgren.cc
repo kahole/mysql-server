@@ -273,8 +273,14 @@ static void open_session() {
   // WRITE_STR("Session 1 : \n");
   // WRITE_SEP();
   exec_test_cmd(session_1,
+                "USE test;", NULL,
+                plugin_ctx);
+  exec_test_cmd(session_1,
                 "CREATE TABLE lundgren_banan ( id INT, name VARCHAR(25))", NULL,
                 plugin_ctx);
+
+  delete plugin_ctx;
+
   DBUG_VOID_RETURN;
 }
 
