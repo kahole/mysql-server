@@ -188,4 +188,6 @@ SELECT * FROM Person;
 
 SELECT * FROM Planet;
 
-UNINSTALL PLUGIN prototype2_rewrite;
+--sleep 99999999999
+
+#UNINSTALL PLUGIN prototype2_rewrite;

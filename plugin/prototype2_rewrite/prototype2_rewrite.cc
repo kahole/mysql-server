@@ -104,12 +104,12 @@ static int swap_table(MYSQL_THD thd, mysql_event_class_t event_class,
 
       // Swap table reference from "Person" to "Planet"
 
-      if (strcmp(first_table_name, "person") == 0) {
+      if (strcmp(first_table_name, "Person") == 0) {
         rewritten_query = static_cast<char *>(
           my_malloc(key_memory_post_parse_example, sw_query_length, MYF(0)));
         sprintf(rewritten_query, "SELECT * FROM Planet");
 
-      } else if (strcmp(first_table_name, "planet") == 0) {
+      } else if (strcmp(first_table_name, "Planet") == 0) {
         rewritten_query = static_cast<char *>(
           my_malloc(key_memory_post_parse_example, sw_query_length, MYF(0)));
         sprintf(rewritten_query, "SELECT * FROM %s", "Person");
