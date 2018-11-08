@@ -182,12 +182,8 @@ INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUE
 
 INSTALL PLUGIN lundgren SONAME 'lundgren.so';
 
-#SELECT * FROM Person;
-
-#SELECT * FROM Planet;
-
 SELECT 'LUNDGREN';
 
-#--sleep 99999999999
+--sleep 99999999999
 
 UNINSTALL PLUGIN lundgren;
