@@ -51,6 +51,7 @@ static int plugin_init(MYSQL_PLUGIN) {
 #define key_memory_lundgren PSI_NOT_INSTRUMENTED
 #endif /* HAVE_PSI_INTERFACE */
 
+
 static int rewrite_lower(MYSQL_THD, mysql_event_class_t event_class,
                          const void *event) {
   if (event_class == MYSQL_AUDIT_PARSE_CLASS) {
@@ -91,10 +92,8 @@ mysql_declare_plugin(audit_log){
     MYSQL_AUDIT_PLUGIN,          /* plugin type                   */
     &lundgren_descriptor, /* type specific descriptor      */
     "lundgren",           /* plugin name                   */
-    "Oracle",                    /* author                        */
-    "An example of a query rewrite"
-    " plugin that rewrites all queries"
-    " to lower case",   /* description                   */
+    "Kristian Andersen Hole & Haavard Ola Eggen", /* author                        */
+    "Distributed query plugin",   /* description                   */
     PLUGIN_LICENSE_GPL, /* license                       */
     plugin_init,        /* plugin initializer            */
     NULL,               /* plugin check uninstall        */
