@@ -1,4 +1,4 @@
-#include "plugin/lundgren/internal_query_session.h"
+#include "plugin/lundgren/internal_query/internal_query_session.h"
 
 #include <fcntl.h>
 #include <mysql/plugin.h>
@@ -7,7 +7,7 @@
 #include <sys/types.h>
 
 #include <mysql/components/my_service.h>
-#include <mysql/components/services/log_builtins.h>
+//#include <mysql/components/services/log_builtins.h>
 #include <mysqld_error.h>
 
 #include "m_string.h"
@@ -17,6 +17,10 @@
 #include "my_sys.h"  // my_write, my_malloc
 #include "mysql_com.h"
 #include "sql_string.h" /* STRING_PSI_MEMORY_KEY */
+
+#include "plugin/lundgren/internal_query/sql_resultset.h"
+#include "plugin/lundgren/internal_query/sql_service_context_base.h"
+#include "plugin/lundgren/internal_query/sql_service_context.h"
 
 static void sql_handle_ok(void *ctx MY_ATTRIBUTE((unused)),
                           uint server_status MY_ATTRIBUTE((unused)),
@@ -135,6 +139,22 @@ int Internal_query_session::execute_resultless_query(const char *query) {
                                          &my_charset_utf8_general_ci, &sql_cbs,
                                          CS_TEXT_REPRESENTATION, plugin_ctx);
   return fail;
+}
+
+Sql_resultset * Internal_query_session::execute_query(const char *query) {
+
+  COM_DATA cmd;
+  cmd.com_query.query = (char*)query;
+  cmd.com_query.length = strlen(cmd.com_query.query);
+
+  Sql_resultset *rset = new Sql_resultset();
+  Sql_service_context_base *ctx = new Sql_service_context(rset);
+
+
+  /*int fail = */command_service_run_command(session, COM_QUERY, &cmd,
+                                         &my_charset_utf8_general_ci, &Sql_service_context_base::sql_service_callbacks,
+                                         CS_TEXT_REPRESENTATION, ctx);
+  return rset;
 }
 
 Internal_query_session::~Internal_query_session() {

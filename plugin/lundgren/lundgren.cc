@@ -36,7 +36,8 @@
 #include "my_psi_config.h"
 #include "my_thread.h"  // my_thread_handle needed by mysql_memory.h
 
-#include "plugin/lundgren/internal_query_session.h"
+#include "plugin/lundgren/internal_query/internal_query_session.h"
+#include "plugin/lundgren/internal_query/sql_resultset.h"
 
 
 /* instrument the memory allocation */
@@ -74,7 +75,11 @@ static int rewrite_lower(MYSQL_THD, mysql_event_class_t event_class,
         session->execute_resultless_query("USE test");
         session->execute_resultless_query("CREATE TABLE test_created_internally ( id INT, name VARCHAR(25))");
         session->execute_resultless_query("INSERT INTO test_created_internally VALUES (1, \"Halla\")");
+        Sql_resultset *result = session->execute_query("SELECT * FROM test_created_internally");
+        int rader = result->get_rows();
+        rader = rader;
         delete session;
+        delete result;
       }
 
       size_t query_length = event_parse->query.length;

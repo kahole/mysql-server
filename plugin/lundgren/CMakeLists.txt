@@ -20,5 +20,14 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301  USA
 
-MYSQL_ADD_PLUGIN(lundgren lundgren.cc internal_query_session.cc
+ADD_DEFINITIONS(-DMYSQL_SERVER)
+ADD_DEFINITIONS(-DLOG_SUBSYSTEM_TAG="Repl")
+ADD_DEFINITIONS(-DLOG_COMPONENT_TAG="group_replication")
+
+MYSQL_ADD_PLUGIN(lundgren
+  lundgren.cc
+  internal_query/internal_query_session.cc
+  internal_query/sql_resultset.cc
+  internal_query/sql_service_context_base.cc
+  internal_query/sql_service_context.cc
   MODULE_ONLY MODULE_OUTPUT_NAME "lundgren")
