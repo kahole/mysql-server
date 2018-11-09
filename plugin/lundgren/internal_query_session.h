@@ -1,0 +1,18 @@
+
+struct st_plugin_ctx;
+typedef class Srv_session *MYSQL_SESSION;
+
+class Internal_query_session
+{
+private:
+    struct st_plugin_ctx *plugin_ctx;
+    MYSQL_SESSION session;
+    
+public:
+    Internal_query_session(/* args */);
+    ~Internal_query_session();
+    int execute_resultless_query(const char *query);
+};
+
+
+
