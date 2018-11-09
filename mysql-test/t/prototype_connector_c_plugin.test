@@ -1,0 +1,11 @@
+
+
+--source suite/query_rewrite_plugins/include/have_plugin_prototype_connector_c.inc
+
+--replace_regex /\.dll/.so/
+
+INSTALL PLUGIN prototype_connector_c SONAME 'prototype_connector_c.so';
+
+SELECT 'abc', 'def';
+
+UNINSTALL PLUGIN prototype_connector_c;
