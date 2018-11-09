@@ -24,17 +24,8 @@ static void sql_handle_ok(void *ctx MY_ATTRIBUTE((unused)),
                           ulonglong affected_rows MY_ATTRIBUTE((unused)),
                           ulonglong last_insert_id MY_ATTRIBUTE((unused)),
                           const char *const message MY_ATTRIBUTE((unused))) {
-  //   struct st_plugin_ctx *pctx = (struct st_plugin_ctx *)ctx;
-  DBUG_ENTER("sql_handle_ok");
-  /* This could be an EOF */
-  //   if (!pctx->num_cols) pctx->num_rows = 0;
-  //   pctx->server_status = server_status;
-  //   pctx->warn_count = statement_warn_count;
-  //   pctx->affected_rows = affected_rows;
-  //   pctx->last_insert_id = last_insert_id;
-  //   if (message) strncpy(pctx->message, message, sizeof(pctx->message) - 1);
-  //   pctx->message[sizeof(pctx->message) - 1] = '\0';
 
+  DBUG_ENTER("sql_handle_ok");
   DBUG_VOID_RETURN;
 }
 
@@ -42,14 +33,8 @@ static void sql_handle_error(
     void *ctx MY_ATTRIBUTE((unused)), uint sql_errno MY_ATTRIBUTE((unused)),
     const char *const err_msg MY_ATTRIBUTE((unused)),
     const char *const sqlstate MY_ATTRIBUTE((unused))) {
-  //   struct st_plugin_ctx *pctx = (struct st_plugin_ctx *)ctx;
+
   DBUG_ENTER("sql_handle_error");
-  //   pctx->sql_errno = sql_errno;
-  //   if (pctx->sql_errno) {
-  //     strcpy(pctx->err_msg, (char *)err_msg);
-  //     strcpy(pctx->sqlstate, (char *)sqlstate);
-  //   }
-  //   pctx->num_rows = 0;
   DBUG_VOID_RETURN;
 }
 
@@ -118,64 +103,42 @@ struct st_plugin_ctx {
   st_plugin_ctx() {}
 };
 
-static void exec_test_cmd(MYSQL_SESSION session, const char *test_cmd,
-                          void *p MY_ATTRIBUTE((unused)), void *ctx) {
-  // WRITE_VAL("%s\n", test_cmd);
-  // struct st_plugin_ctx *pctx = (struct st_plugin_ctx *)ctx;
-  COM_DATA cmd;
-  //   pctx->reset();
-  cmd.com_query.query = (char *)test_cmd;
-  cmd.com_query.length = strlen(cmd.com_query.query);
+// static const char *user_localhost = "localhost";
+// static const char *user_local = "127.0.0.1";
+// static const char *user_db = "test";
+// static const char *user_privileged = "root";
+// // static const char *user_ordinary= "ordinary";
 
-  int fail = command_service_run_command(session, COM_QUERY, &cmd,
-                                         &my_charset_utf8_general_ci, &sql_cbs,
-                                         CS_TEXT_REPRESENTATION, ctx);
-  if (fail) {
-    // if (!srv_session_close(session))
-    //   LogPluginErrMsg(ERROR_LEVEL, ER_LOG_PRINTF_MSG,
-    //                   "test_sql_2_sessions - ret code : %d", fail);
-  } else {
-    // if (pctx->num_cols) get_data_str(pctx);
-    // handle_error(pctx);
-  }
-}
-
-static const char *user_localhost = "localhost";
-static const char *user_local = "127.0.0.1";
-static const char *user_db = "test";
-static const char *user_privileged = "root";
-// static const char *user_ordinary= "ordinary";
-
-static void switch_user(MYSQL_SESSION session, const char *user) {
-  MYSQL_SECURITY_CONTEXT sc;
-  thd_get_security_context(srv_session_info_get_thd(session), &sc);
-  security_context_lookup(sc, user, user_localhost, user_local, user_db);
-}
+// static void switch_user(MYSQL_SESSION session, const char *user) {
+//   MYSQL_SECURITY_CONTEXT sc;
+//   thd_get_security_context(srv_session_info_get_thd(session), &sc);
+//   security_context_lookup(sc, user, user_localhost, user_local, user_db);
+// }
 
 Internal_query_session::Internal_query_session() {
 
   plugin_ctx = new st_plugin_ctx();
-
-  MYSQL_SESSION session_1 = srv_session_open(NULL, plugin_ctx);
-
-  if (!session_1) {
-  } else {
-    switch_user(session_1, user_privileged);
-  }
-
-  exec_test_cmd(session_1, "USE test;", NULL, plugin_ctx);
-  exec_test_cmd(session_1,
-                "CREATE TABLE lundgren_banan ( id INT, name VARCHAR(25))", NULL,
-                plugin_ctx);
+  session = srv_session_open(NULL, plugin_ctx);
+  // if (!session) {
+  //} else {
+  //  switch_user(session, user_privileged);
+  //}
 }
 
-void Internal_query_session::execute_resultless_queries() {
+int Internal_query_session::execute_resultless_query(const char *query) {
+  
+  COM_DATA cmd;
+  cmd.com_query.query = (char*)query;
+  cmd.com_query.length = strlen(cmd.com_query.query);
 
-
+  int fail = command_service_run_command(session, COM_QUERY, &cmd,
+                                         &my_charset_utf8_general_ci, &sql_cbs,
+                                         CS_TEXT_REPRESENTATION, plugin_ctx);
+  return fail;
 }
 
 Internal_query_session::~Internal_query_session() {
-    delete plugin_ctx;
-    //TODO: close session?
-    // delete session??
+  delete plugin_ctx;
+  // session close deletes session also
+  srv_session_close(session);
 }

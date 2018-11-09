@@ -184,7 +184,7 @@ INSTALL PLUGIN lundgren SONAME 'lundgren.so';
 
 SELECT 'LUNDGREN';
 
-SELECT * FROM lundgren_banan;
+#SELECT * FROM lundgren_banan;
 
 --sleep 99999999999
 

@@ -62,23 +62,20 @@ static int plugin_init(MYSQL_PLUGIN) {
 
 int i = 0;
 
-static int rewrite_lower(MYSQL_THD thd, mysql_event_class_t event_class,
+static int rewrite_lower(MYSQL_THD, mysql_event_class_t event_class,
                          const void *event) {
   if (event_class == MYSQL_AUDIT_PARSE_CLASS) {
     const struct mysql_event_parse *event_parse =
         static_cast<const struct mysql_event_parse *>(event);
     if (event_parse->event_subclass == MYSQL_AUDIT_PARSE_PREPARSE) {
-      // MYSQL_LEX_STRING db_string = {"test", 4};
-      // mysql_parser_set_current_database(thd, db_string);
-
+ 
       if (i++ == 0) {
-        //open_session();
+        Internal_query_session *session = new Internal_query_session();
+        session->execute_resultless_query("USE test");
+        session->execute_resultless_query("CREATE TABLE test_created_internally ( id INT, name VARCHAR(25))");
+        session->execute_resultless_query("INSERT INTO test_created_internally VALUES (1, \"Halla\")");
+        delete session;
       }
-
-      auto banan = thd;
-      thd = banan;
-
-      //
 
       size_t query_length = event_parse->query.length;
       char *rewritten_query = static_cast<char *>(
