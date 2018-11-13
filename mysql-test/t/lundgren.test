@@ -182,9 +182,11 @@ INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUE
 
 INSTALL PLUGIN lundgren SONAME 'lundgren.so';
 
+SHOW WARNINGS;
+
 SELECT 'trigger rewrite plugin';
 
-SELECT * FROM test_created_internally;
+#SELECT * FROM test_created_internally;
 
 #--sleep 99999999999
 
