@@ -31,12 +31,7 @@
 #include "my_psi_config.h"
 #include "my_thread.h"  // my_thread_handle needed by mysql_memory.h
 
-
-#include "mysql_connection.h"
-#include <cppconn/driver.h>
-#include <cppconn/exception.h>
-#include <cppconn/resultset.h>
-#include <cppconn/statement.h>
+#include <mysqlx/xdevapi.h>
 #include <iostream>
 
 /* instrument the memory allocation */
@@ -59,66 +54,40 @@ static int plugin_init(MYSQL_PLUGIN) {
 #define key_memory_rewrite_example PSI_NOT_INSTRUMENTED
 #endif /* HAVE_PSI_INTERFACE */
 
-
 static int connect_database(MYSQL_THD, mysql_event_class_t event_class,
                             const void *event) {
-    if (event_class == MYSQL_AUDIT_PARSE_CLASS) {
-        const struct mysql_event_parse *event_parse =
-            static_cast<const struct mysql_event_parse *>(event);
+  if (event_class == MYSQL_AUDIT_PARSE_CLASS) {
+    const struct mysql_event_parse *event_parse =
+        static_cast<const struct mysql_event_parse *>(event);
 
-        if (event_parse->event_subclass == MYSQL_AUDIT_PARSE_PREPARSE) {
+    if (event_parse->event_subclass == MYSQL_AUDIT_PARSE_PREPARSE) {
+      //try {
+        mysqlx::Session s("mysqlx://root@127.0.0.1:12110/test");
+        std::cout << "\t... did connect ";
+        mysqlx::SqlResult res = s.sql("SELECT 'Hello World!' AS _message").execute();
+        mysqlx::Row r = res.fetchOne();
+        std::cout << "\t... MySQL replies: ";
+        std::cout << r[0] << std::endl;
+      //} catch (mysqlx::Error &e) {
+        //std::cout << e << std::endl;
+      //}
 
-            // try {
-                sql::Driver *driver;
-                sql::Connection *con;
-                sql::Statement *stmt;
-                sql::ResultSet *res;
+      // rewrite to lowercase
 
-                /* Create a connection */
-                driver = get_driver_instance();
-                
-                /* Connect to the MySQL test database */
-                con = driver->connect("tcp://127.0.0.1:12100", "root", "");
+      size_t query_length = event_parse->query.length;
+      char *rewritten_query = static_cast<char *>(
+          my_malloc(key_memory_rewrite_example, query_length + 1, MYF(0)));
 
-                //con = driver->connect("tcp://atum20.no.oracle.com:13000", "hola", "bananpose");
-				//con = driver->connect("unix:///export/home/tmp/kahole/mysql-server/bld2/mysql-test/var/tmp/mysqld.1.sock", "root", "");
-				
-                con->setSchema("test");
+      for (unsigned i = 0; i < query_length + 1; i++)
+        rewritten_query[i] = tolower(event_parse->query.str[i]);
 
-                stmt = con->createStatement();
-                res = stmt->executeQuery("SELECT 'Hello World!' AS _message");
-                while (res->next()) {
-                    std::cout << "\t... MySQL replies: ";
-                    /* Access column data by alias or column name */
-                    std::cout << res->getString("_message") << std::endl;
-                    std::cout << "\t... MySQL says it again: ";
-                    /* Access column data by numeric offset, 1 is the first column */
-                    std::cout << res->getString(1) << std::endl;
-                }
-                delete res;
-                delete stmt;
-                delete con;
-
-            // } catch (sql::SQLException &e) {
-            //     std::cout << "test" << std::endl;
-            // }
-
-			//rewrite to lowercase
-
-            size_t query_length = event_parse->query.length;
-            char *rewritten_query = static_cast<char *>(
-            my_malloc(key_memory_rewrite_example, query_length + 1, MYF(0)));
-
-            for (unsigned i = 0; i < query_length + 1; i++)
-                rewritten_query[i] = tolower(event_parse->query.str[i]);
-
-            event_parse->rewritten_query->str = rewritten_query;
-            event_parse->rewritten_query->length = query_length;
-            *((int *)event_parse->flags) |=
-                (int)MYSQL_AUDIT_PARSE_REWRITE_PLUGIN_QUERY_REWRITTEN;
-        }
+      event_parse->rewritten_query->str = rewritten_query;
+      event_parse->rewritten_query->length = query_length;
+      *((int *)event_parse->flags) |=
+          (int)MYSQL_AUDIT_PARSE_REWRITE_PLUGIN_QUERY_REWRITTEN;
     }
-    return 0;
+  }
+  return 0;
 }
 
 /* Audit plugin descriptor */
@@ -126,7 +95,7 @@ static struct st_mysql_audit prototype_connector_c_descriptor = {
     MYSQL_AUDIT_INTERFACE_VERSION, /* interface version */
     NULL,                          /* release_thd()     */
     // rewrite_lower,                 /* event_notify()    */
-    connect_database,                 /* event_notify()    */
+    connect_database, /* event_notify()    */
     {
         0,
         0,
@@ -136,10 +105,10 @@ static struct st_mysql_audit prototype_connector_c_descriptor = {
 
 /* Plugin descriptor */
 mysql_declare_plugin(audit_log){
-    MYSQL_AUDIT_PLUGIN,          /* plugin type                   */
+    MYSQL_AUDIT_PLUGIN,                /* plugin type                   */
     &prototype_connector_c_descriptor, /* type specific descriptor      */
     "prototype_connector_c",           /* plugin name                   */
-    "Oracle",                    /* author                        */
+    "Oracle",                          /* author                        */
     "An example of a query rewrite"
     " plugin that rewrites all queries"
     " to lower case",   /* description                   */

@@ -22,5 +22,5 @@
 
 MYSQL_ADD_PLUGIN(prototype_connector_c prototype_connector_c.cc
   MODULE_ONLY MODULE_OUTPUT_NAME "prototype_connector_c"
-  LINK_LIBRARIES "mysqlcppconn"
+  LINK_LIBRARIES "mysqlcppconn8"
   )
