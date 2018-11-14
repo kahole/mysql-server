@@ -33,6 +33,7 @@
 
 #include <mysqlx/xdevapi.h>
 #include <iostream>
+#include <thread>
 
 /* instrument the memory allocation */
 #ifdef HAVE_PSI_INTERFACE
@@ -54,6 +55,23 @@ static int plugin_init(MYSQL_PLUGIN) {
 #define key_memory_rewrite_example PSI_NOT_INSTRUMENTED
 #endif /* HAVE_PSI_INTERFACE */
 
+int connect_node(std::string node, std::string query, std::string **result MY_ATTRIBUTE((unused))) {
+    mysqlx::Session s(node);
+    mysqlx::SqlResult res = s.sql(query).execute();
+    mysqlx::Row row;
+    std::string result_string;
+    while(( row = res.fetchOne())) {
+        result_string += std::string(row[1]) + std::string("\n");
+    }
+    *result = new std::string(result_string);
+    return 0;
+}
+
+static bool is_plugin_internal_query(const char *query) {
+    return query[0] == '/';
+}
+
+int qwerty = 0;
 static int connect_database(MYSQL_THD, mysql_event_class_t event_class,
                             const void *event) {
   if (event_class == MYSQL_AUDIT_PARSE_CLASS) {
@@ -61,30 +79,51 @@ static int connect_database(MYSQL_THD, mysql_event_class_t event_class,
         static_cast<const struct mysql_event_parse *>(event);
 
     if (event_parse->event_subclass == MYSQL_AUDIT_PARSE_PREPARSE) {
-      //try {
-        mysqlx::Session s("mysqlx://root@127.0.0.1:12110/test");
-        std::cout << "\t... did connect ";
-        mysqlx::SqlResult res = s.sql("SELECT 'Hello World!' AS _message").execute();
-        mysqlx::Row r = res.fetchOne();
-        std::cout << "\t... MySQL replies: ";
-        std::cout << r[0] << std::endl;
-      //} catch (mysqlx::Error &e) {
-        //std::cout << e << std::endl;
-      //}
+        if (is_plugin_internal_query(event_parse->query.str)) return 0;
 
-      // rewrite to lowercase
+        const int num_thd = 2;
+        std::string nodes_metadata[] = {"127.0.0.1:12110", "127.0.0.1:13010"};
+        std::thread nodes_connection[num_thd];
 
-      size_t query_length = event_parse->query.length;
-      char *rewritten_query = static_cast<char *>(
-          my_malloc(key_memory_rewrite_example, query_length + 1, MYF(0)));
+        std::string *results[num_thd] = {NULL, NULL};
 
-      for (unsigned i = 0; i < query_length + 1; i++)
-        rewritten_query[i] = tolower(event_parse->query.str[i]);
 
-      event_parse->rewritten_query->str = rewritten_query;
-      event_parse->rewritten_query->length = query_length;
-      *((int *)event_parse->flags) |=
-          (int)MYSQL_AUDIT_PARSE_REWRITE_PLUGIN_QUERY_REWRITTEN;
+        if ( qwerty++ == 0 ){
+            for (int i = 0; i < num_thd; i++){
+                std::string node = std::string("mysqlx://root@") + nodes_metadata[i] + std::string("/test");
+                // std::string query = std::string("/*asdf*/SELECT 'Hello World!' AS _message");
+                std::string query = std::string("/*asdf*/SELECT * FROM Person LIMIT 10");
+                nodes_connection[i] = std::thread(connect_node, node, query, &results[i]);
+            }
+
+            for (int i = 0; i < num_thd; i++){
+                nodes_connection[i].join();
+            }
+
+            // for (int i = 0; i < num_thd; i++){
+            //     std::cout << "Star Wars characters from node: " << i << '\n' << *results[i];
+            // }
+            std::cout << "\nStar Wars characters from node " << 0 << '\n' 
+                << "--------------------------------\n" << *results[0];
+            std::cout << "********************************\n";
+            std::cout << "Star Wars characters from node " << 1 << '\n' 
+                << "--------------------------------\n" << *results[1] << '\n';
+            std::cout << "adf";
+        }
+
+    // rewrite to lowercase
+
+    //   size_t query_length = event_parse->query.length;
+    //   char *rewritten_query = static_cast<char *>(
+    //       my_malloc(key_memory_rewrite_example, query_length + 1, MYF(0)));
+
+    //   for (unsigned i = 0; i < query_length + 1; i++)
+    //     rewritten_query[i] = tolower(event_parse->query.str[i]);
+
+    //   event_parse->rewritten_query->str = rewritten_query;
+    //   event_parse->rewritten_query->length = query_length;
+    //   *((int *)event_parse->flags) |=
+    //       (int)MYSQL_AUDIT_PARSE_REWRITE_PLUGIN_QUERY_REWRITTEN;
     }
   }
   return 0;
