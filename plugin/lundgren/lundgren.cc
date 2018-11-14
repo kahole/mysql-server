@@ -21,15 +21,25 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301  USA */
 
 #include <ctype.h>
+#include <mysql/components/services/log_builtins.h>
 #include <mysql/plugin.h>
 #include <mysql/plugin_audit.h>
 #include <mysql/psi/mysql_memory.h>
 #include <mysql/service_mysql_alloc.h>
 #include <string.h>
 
+#include <mysql/service_command.h>
+#include <mysql/service_parser.h>
+#include <mysql/service_srv_session.h>
+
 #include "my_inttypes.h"
 #include "my_psi_config.h"
 #include "my_thread.h"  // my_thread_handle needed by mysql_memory.h
+
+#include "plugin/lundgren/query_acceptance.h"
+
+#include "plugin/lundgren/internal_query/internal_query_session.h"
+#include "plugin/lundgren/internal_query/sql_resultset.h"
 
 /* instrument the memory allocation */
 #ifdef HAVE_PSI_INTERFACE
@@ -51,6 +61,7 @@ static int plugin_init(MYSQL_PLUGIN) {
 #define key_memory_lundgren PSI_NOT_INSTRUMENTED
 #endif /* HAVE_PSI_INTERFACE */
 
+int i = 0;
 
 static int rewrite_lower(MYSQL_THD, mysql_event_class_t event_class,
                          const void *event) {
@@ -58,15 +69,38 @@ static int rewrite_lower(MYSQL_THD, mysql_event_class_t event_class,
     const struct mysql_event_parse *event_parse =
         static_cast<const struct mysql_event_parse *>(event);
     if (event_parse->event_subclass == MYSQL_AUDIT_PARSE_PREPARSE) {
-      size_t query_length = event_parse->query.length;
-      char *rewritten_query = static_cast<char *>(
-          my_malloc(key_memory_lundgren, query_length + 1, MYF(0)));
 
-      for (unsigned i = 0; i < query_length + 1; i++)
-        rewritten_query[i] = tolower(event_parse->query.str[i]);
+        
+      if (!accept_query(event_parse->query.str)) return 0;
+
+      if (i++ == 0) {
+        Internal_query_session *session = new Internal_query_session();
+        session->execute_resultless_query("/*plugin*/USE test");
+        session->execute_resultless_query(
+            "/*plugin*/CREATE TABLE test_created_internally ( id INT, name "
+            "VARCHAR(25))");
+        session->execute_resultless_query(
+            "/*plugin*/INSERT INTO test_created_internally VALUES (1, "
+            "\"Halla\")");
+        Sql_resultset *result = session->execute_query(
+            "/*plugin*/SELECT * FROM test_created_internally");
+        int rader = result->get_rows();
+        rader = rader;
+        delete session;
+        delete result;
+      }
+
+      std::string rq = "SELECT * FROM test_created_internally";
+      size_t query_length = rq.length();
+
+      char *rewritten_query = static_cast<char *>(
+          my_malloc(key_memory_lundgren, query_length, MYF(0)));
+
+      strcpy(rewritten_query, rq.c_str());
 
       event_parse->rewritten_query->str = rewritten_query;
       event_parse->rewritten_query->length = query_length;
+
       *((int *)event_parse->flags) |=
           (int)MYSQL_AUDIT_PARSE_REWRITE_PLUGIN_QUERY_REWRITTEN;
     }
@@ -89,18 +123,18 @@ static struct st_mysql_audit lundgren_descriptor = {
 
 /* Plugin descriptor */
 mysql_declare_plugin(audit_log){
-    MYSQL_AUDIT_PLUGIN,          /* plugin type                   */
+    MYSQL_AUDIT_PLUGIN,   /* plugin type                   */
     &lundgren_descriptor, /* type specific descriptor      */
     "lundgren",           /* plugin name                   */
-    "Kristian Andersen Hole & Haavard Ola Eggen", /* author                        */
-    "Distributed query plugin",   /* description                   */
-    PLUGIN_LICENSE_GPL, /* license                       */
-    plugin_init,        /* plugin initializer            */
-    NULL,               /* plugin check uninstall        */
-    NULL,               /* plugin deinitializer          */
-    0x0002,             /* version                       */
-    NULL,               /* status variables              */
-    NULL,               /* system variables              */
-    NULL,               /* reserverd                     */
-    0                   /* flags                         */
+    "Kristian Andersen Hole & Haavard Ola Eggen", /* author */
+    "Distributed query plugin", /* description                   */
+    PLUGIN_LICENSE_GPL,         /* license                       */
+    plugin_init,                /* plugin initializer            */
+    NULL,                       /* plugin check uninstall        */
+    NULL,                       /* plugin deinitializer          */
+    0x0002,                     /* version                       */
+    NULL,                       /* status variables              */
+    NULL,                       /* system variables              */
+    NULL,                       /* reserverd                     */
+    0                           /* flags                         */
 } mysql_declare_plugin_end;
