@@ -30,6 +30,7 @@
 class SELECT_LEX_UNIT;
 class SELECT_LEX;
 class Item;
+struct TABLE_LIST;
 
 /**
   Abstract base class for traversing the SELECT_LEX tree. In order to use it,
@@ -46,12 +47,15 @@ class Select_lex_visitor {
   /// Called for all nodes of all expression trees (i.e. Item trees).
   bool visit(Item *item) { return visit_item(item); }
 
+  bool visit(TABLE_LIST *tl) { return visit_table(tl); }
+
   virtual ~Select_lex_visitor() = 0;
 
  protected:
   virtual bool visit_union(SELECT_LEX_UNIT *) { return false; }
   virtual bool visit_query_block(SELECT_LEX *) { return false; }
   virtual bool visit_item(Item *) { return false; }
+  virtual bool visit_table(TABLE_LIST *) { return false; }
 };
 
 #endif  // SELECT_LEX_VISITOR_INCLUDED
