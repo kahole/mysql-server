@@ -14,11 +14,19 @@ int connect_node(std::string node, std::string query,
   mysqlx::Row row;
   std::string result_string;
   while ((row = res.fetchOne())) {
-    result_string += std::string(row[1]) + std::string("\n");
+    // result_string += std::string(row[1]) + std::string("\n");
+    result_string +=
+        std::string("(") + std::to_string(int(row[0])) + std::string(",") +
+        std::string("\"") + std::string(row[1]) + std::string("\",") +
+        std::to_string(int(row[2])) + std::string(",") +
+        std::to_string(int(row[3])) + std::string(",") + std::string("\"") +
+        std::string(row[4]) + std::string("\",") + std::string("\"") +
+        std::string(row[5]) + std::string("\",") + std::to_string(int(row[6])) +
+        std::string("),");
   }
+  result_string.pop_back();
   *result = new std::string(result_string);
-
-    s.close();
+  s.close();
 
   return 0;
 }
@@ -43,6 +51,16 @@ static void execute_distributed_query_set() {
     nodes_connection[i].join();
   }
 
+  std::string insert_query =
+      PLUGIN_FLAG "INSERT INTO fake_temp_table_person VALUES ";
+
+  for (int i = 0; i < num_thd; i++) {
+    insert_query += *results[i];
+    if (i != num_thd - 1) {
+      insert_query += ",";
+    }
+  }
+
   Internal_query_session *session = new Internal_query_session();
   session->execute_resultless_query(PLUGIN_FLAG "USE test");
   session->execute_resultless_query(
@@ -56,10 +74,7 @@ static void execute_distributed_query_set() {
       "gender VARCHAR(20),"
       "homeworld INT UNSIGNED,"
       "FOREIGN KEY (homeworld) REFERENCES Planet(id))");
-  session->execute_resultless_query(
-      PLUGIN_FLAG
-      "INSERT INTO fake_temp_table_person VALUES (1, \"Luke Skywalker\", 172, "
-      "77, \"blond\", \"male\", 1)");
+  session->execute_resultless_query(insert_query.c_str());
 
   delete session;
 }
