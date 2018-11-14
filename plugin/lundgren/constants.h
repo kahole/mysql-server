@@ -1,2 +1,7 @@
 
+#ifndef LUNDGREN_CONSTANTS
+#define LUNDGREN_CONSTANTS
+
 #define PLUGIN_FLAG "/*plugin*/"
+
+#endif  // LUNDGREN_CONSTANTS

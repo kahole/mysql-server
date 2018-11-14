@@ -1,6 +1,8 @@
 #include <string.h>
 #include "plugin/lundgren/constants.h"
 
+#ifndef LUNDGREN_QUERY_ACCEPTANCE
+#define LUNDGREN_QUERY_ACCEPTANCE
 
 static bool is_query_plugin_generated(const char *query) {
 
@@ -21,3 +23,5 @@ static bool accept_query(const char *query) {
 
     return true;
 }
+
+#endif  // LUNDGREN_QUERY_ACCEPTANCE
