@@ -36,6 +36,8 @@
 #include "my_psi_config.h"
 #include "my_thread.h"  // my_thread_handle needed by mysql_memory.h
 
+#include "plugin/lundgren/query_acceptance.h"
+
 #include "plugin/lundgren/internal_query/internal_query_session.h"
 #include "plugin/lundgren/internal_query/sql_resultset.h"
 
@@ -59,10 +61,6 @@ static int plugin_init(MYSQL_PLUGIN) {
 #define key_memory_lundgren PSI_NOT_INSTRUMENTED
 #endif /* HAVE_PSI_INTERFACE */
 
-static bool is_plugin_internal_query(const char *query) {
-  return query[0] == '/';
-}
-
 int i = 0;
 
 static int rewrite_lower(MYSQL_THD, mysql_event_class_t event_class,
@@ -73,7 +71,7 @@ static int rewrite_lower(MYSQL_THD, mysql_event_class_t event_class,
     if (event_parse->event_subclass == MYSQL_AUDIT_PARSE_PREPARSE) {
 
         
-      if (is_plugin_internal_query(event_parse->query.str)) return 0;
+      if (!accept_query(event_parse->query.str)) return 0;
 
       if (i++ == 0) {
         Internal_query_session *session = new Internal_query_session();
@@ -92,8 +90,7 @@ static int rewrite_lower(MYSQL_THD, mysql_event_class_t event_class,
         delete result;
       }
 
-
-      std::string rq = "SELECT * FROM test_created_internally\0";
+      std::string rq = "SELECT * FROM test_created_internally";
       size_t query_length = rq.length();
 
       char *rewritten_query = static_cast<char *>(
@@ -101,11 +98,9 @@ static int rewrite_lower(MYSQL_THD, mysql_event_class_t event_class,
 
       strcpy(rewritten_query, rq.c_str());
 
-      //   for (unsigned i = 0; i < query_length + 1; i++)
-      //     rewritten_query[i] = tolower(event_parse->query.str[i]);
-
       event_parse->rewritten_query->str = rewritten_query;
       event_parse->rewritten_query->length = query_length;
+
       *((int *)event_parse->flags) |=
           (int)MYSQL_AUDIT_PARSE_REWRITE_PLUGIN_QUERY_REWRITTEN;
     }
