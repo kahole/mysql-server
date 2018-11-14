@@ -61,8 +61,18 @@ int connect_node(std::string node, std::string query, std::string **result MY_AT
     mysqlx::Row row;
     std::string result_string;
     while(( row = res.fetchOne())) {
-        result_string += std::string(row[1]) + std::string("\n");
+        // result_string += std::string(row[1]) + std::string("\n");
+        result_string += std::string("(")
+            + std::to_string(int(row[0]))               + std::string(",")
+            + std::string("\"") + std::string(row[1])    + std::string("\",")
+            + std::to_string(int(row[2]))               + std::string(",")
+            + std::to_string(int(row[3]))               + std::string(",")
+            + std::string("\"") + std::string(row[4])    + std::string("\",")
+            + std::string("\"") + std::string(row[5])    + std::string("\",")
+            + std::to_string(int(row[6]))
+            + std::string("),");
     }
+    result_string.pop_back();
     *result = new std::string(result_string);
     return 0;
 }
