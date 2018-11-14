@@ -11,15 +11,19 @@ static bool is_query_plugin_generated(const char *query) {
     return (strncmp(query, plugin_flag.c_str(), plugin_flag.length()) == 0);
 }
 
+static bool is_query_select_statement(const char *query) {
+    return (strncmp(query, "SELECT", 6) == 0);
+}
+
 static bool accept_query(const char *query) {
 
     if (is_query_plugin_generated(query)) {
         return false;
     }
 
-    // TODO:
-    // Sjekke etter SELECT, etc
-    // for å kun slippe gjennom de vi har støtte for
+    if (!is_query_select_statement(query)) {
+        return false;
+    }
 
     return true;
 }

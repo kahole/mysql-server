@@ -63,14 +63,13 @@ static int plugin_init(MYSQL_PLUGIN) {
 
 int i = 0;
 
-static int rewrite_lower(MYSQL_THD, mysql_event_class_t event_class,
+static int rewrite_lower(MYSQL_THD thd, mysql_event_class_t event_class,
                          const void *event) {
   if (event_class == MYSQL_AUDIT_PARSE_CLASS) {
     const struct mysql_event_parse *event_parse =
         static_cast<const struct mysql_event_parse *>(event);
-    if (event_parse->event_subclass == MYSQL_AUDIT_PARSE_PREPARSE) {
+    if (event_parse->event_subclass == MYSQL_AUDIT_PARSE_POSTPARSE) {
 
-        
       if (!accept_query(event_parse->query.str)) return 0;
 
       if (i++ == 0) {
@@ -93,16 +92,15 @@ static int rewrite_lower(MYSQL_THD, mysql_event_class_t event_class,
       std::string rq = "SELECT * FROM test_created_internally";
       size_t query_length = rq.length();
 
-      char *rewritten_query = static_cast<char *>(
-          my_malloc(key_memory_lundgren, query_length, MYF(0)));
+      char *rewritten_query = static_cast<char *>(my_malloc(key_memory_lundgren, query_length, MYF(0)));
 
-      strcpy(rewritten_query, rq.c_str());
+      sprintf(rewritten_query, "%s", rq.c_str());
 
-      event_parse->rewritten_query->str = rewritten_query;
-      event_parse->rewritten_query->length = query_length;
+      MYSQL_LEX_STRING new_query = {rewritten_query, query_length};
 
-      *((int *)event_parse->flags) |=
-          (int)MYSQL_AUDIT_PARSE_REWRITE_PLUGIN_QUERY_REWRITTEN;
+      mysql_parser_parse(thd, new_query, false, NULL, NULL);
+
+      *((int *)event_parse->flags) |= (int)MYSQL_AUDIT_PARSE_REWRITE_PLUGIN_QUERY_REWRITTEN;
     }
   }
 
