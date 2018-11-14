@@ -37,9 +37,8 @@
 #include "my_thread.h"  // my_thread_handle needed by mysql_memory.h
 
 #include "plugin/lundgren/query_acceptance.h"
+#include "plugin/lundgren/distributed_query_manager.h"
 
-#include "plugin/lundgren/internal_query/internal_query_session.h"
-#include "plugin/lundgren/internal_query/sql_resultset.h"
 
 /* instrument the memory allocation */
 #ifdef HAVE_PSI_INTERFACE
@@ -61,7 +60,7 @@ static int plugin_init(MYSQL_PLUGIN) {
 #define key_memory_lundgren PSI_NOT_INSTRUMENTED
 #endif /* HAVE_PSI_INTERFACE */
 
-int i = 0;
+//int i = 0;
 
 static int lundgren_start(MYSQL_THD thd, mysql_event_class_t event_class,
                          const void *event) {
@@ -70,33 +69,19 @@ static int lundgren_start(MYSQL_THD thd, mysql_event_class_t event_class,
         static_cast<const struct mysql_event_parse *>(event);
     if (event_parse->event_subclass == MYSQL_AUDIT_PARSE_POSTPARSE) {
 
-      if (!accept_query(event_parse->query.str)) return 0;
-
-      if (i++ == 0) {
-        Internal_query_session *session = new Internal_query_session();
-        session->execute_resultless_query("/*plugin*/USE test");
-        session->execute_resultless_query(
-            "/*plugin*/CREATE TABLE test_created_internally ( id INT, name "
-            "VARCHAR(25))");
-        session->execute_resultless_query(
-            "/*plugin*/INSERT INTO test_created_internally VALUES (1, "
-            "\"Halla\")");
-        Sql_resultset *result = session->execute_query(
-            "/*plugin*/SELECT * FROM test_created_internally");
-        int rader = result->get_rows();
-        rader = rader;
-        delete session;
-        delete result;
+      if (!accept_query(event_parse->query.str)) {
+          return 0;
       }
 
-      std::string rq = "SELECT * FROM test_created_internally";
+      execute_distributed_query_set();
+
+      std::string rq = "SELECT * FROM fake_temp_table_person";
       size_t query_length = rq.length();
 
       char *rewritten_query = static_cast<char *>(my_malloc(key_memory_lundgren, query_length, MYF(0)));
-
       sprintf(rewritten_query, "%s", rq.c_str());
-
       MYSQL_LEX_STRING new_query = {rewritten_query, query_length};
+
 
       mysql_parser_parse(thd, new_query, false, NULL, NULL);
 
