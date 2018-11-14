@@ -63,7 +63,7 @@ static int plugin_init(MYSQL_PLUGIN) {
 
 int i = 0;
 
-static int rewrite_lower(MYSQL_THD thd, mysql_event_class_t event_class,
+static int lundgren_start(MYSQL_THD thd, mysql_event_class_t event_class,
                          const void *event) {
   if (event_class == MYSQL_AUDIT_PARSE_CLASS) {
     const struct mysql_event_parse *event_parse =
@@ -111,7 +111,7 @@ static int rewrite_lower(MYSQL_THD thd, mysql_event_class_t event_class,
 static struct st_mysql_audit lundgren_descriptor = {
     MYSQL_AUDIT_INTERFACE_VERSION, /* interface version */
     NULL,                          /* release_thd()     */
-    rewrite_lower,                 /* event_notify()    */
+    lundgren_start,                 /* event_notify()    */
     {
         0,
         0,
