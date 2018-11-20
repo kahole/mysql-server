@@ -36,7 +36,10 @@
 #include "my_psi_config.h"
 #include "my_thread.h"  // my_thread_handle needed by mysql_memory.h
 
+#include <iostream>
+
 #include "plugin/lundgren/query_acceptance.h"
+#include "plugin/lundgren/partitions/partition.h"
 #include "plugin/lundgren/distributed_query_manager.h"
 
 
@@ -50,6 +53,10 @@ static PSI_memory_info all_rewrite_memory[] = {
 static int plugin_init(MYSQL_PLUGIN) {
   const char *category = "sql";
   int count;
+
+  Partition *partitions = get_partitions();
+
+  std::cout << partitions[0].table_name << "\n";
 
   count = static_cast<int>(array_elements(all_rewrite_memory));
   mysql_memory_register(category, all_rewrite_memory, count);

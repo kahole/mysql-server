@@ -1,4 +1,7 @@
 
+#ifndef LUNDGREN_INTERNAL_QUERY_SESSION
+#define LUNDGREN_INTERNAL_QUERY_SESSION
+
 struct st_plugin_ctx;
 typedef class Srv_session *MYSQL_SESSION;
 class Sql_resultset;
@@ -16,5 +19,4 @@ public:
     Sql_resultset * execute_query(const char *query);
 };
 
-
-
+#endif  // LUNDGREN_INTERNAL_QUERY_SESSION
