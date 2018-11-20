@@ -1,15 +1,18 @@
 #include <string.h>
 
-struct node_query
-{
-    std::string host;
-    int port;
-    std::string database;
-    std::string query_str;
-    std::string table_name;
-};
+// struct node_query
+// {
+//     std::string host;
+//     int port;
+//     std::string database;
+//     std::string query_str;
+//     std::string table_name;
+// };
 
 /*
+
+GJØR META DATA spørringene i plugin_init !
+
 
 META DATA kladd
 
