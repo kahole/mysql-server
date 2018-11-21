@@ -50,11 +50,13 @@ static PSI_memory_key key_memory_lundgren;
 static PSI_memory_info all_rewrite_memory[] = {
     {&key_memory_lundgren, "lundgren", 0, 0, PSI_DOCUMENT_ME}};
 
+Partition *partitions;
+
 static int plugin_init(MYSQL_PLUGIN) {
   const char *category = "sql";
   int count;
 
-  Partition *partitions = get_partitions();
+  partitions = get_partitions();
 
   std::cout << partitions[0].table_name << "\n";
 
