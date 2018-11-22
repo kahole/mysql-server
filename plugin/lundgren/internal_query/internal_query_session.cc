@@ -137,7 +137,7 @@ int Internal_query_session::execute_resultless_query(const char *query) {
 
   int fail = command_service_run_command(session, COM_QUERY, &cmd,
                                          &my_charset_utf8_general_ci, &sql_cbs,
-                                         CS_TEXT_REPRESENTATION, plugin_ctx);
+                                         CS_BINARY_REPRESENTATION, plugin_ctx);
   return fail;
 }
 
@@ -153,7 +153,7 @@ Sql_resultset * Internal_query_session::execute_query(const char *query) {
 
   /*int fail = */command_service_run_command(session, COM_QUERY, &cmd,
                                          &my_charset_utf8_general_ci, &Sql_service_context_base::sql_service_callbacks,
-                                         CS_TEXT_REPRESENTATION, ctx);
+                                         CS_BINARY_REPRESENTATION, ctx);
   return rset;
 }
 
