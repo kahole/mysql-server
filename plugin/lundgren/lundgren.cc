@@ -38,10 +38,9 @@
 
 #include <iostream>
 
-#include "plugin/lundgren/query_acceptance.h"
-#include "plugin/lundgren/partitions/partition.h"
 #include "plugin/lundgren/distributed_query_manager.h"
-
+#include "plugin/lundgren/partitions/partition.h"
+#include "plugin/lundgren/query_acceptance.h"
 
 /* instrument the memory allocation */
 #ifdef HAVE_PSI_INTERFACE
@@ -50,14 +49,9 @@ static PSI_memory_key key_memory_lundgren;
 static PSI_memory_info all_rewrite_memory[] = {
     {&key_memory_lundgren, "lundgren", 0, 0, PSI_DOCUMENT_ME}};
 
-
 static int plugin_init(MYSQL_PLUGIN) {
   const char *category = "sql";
   int count;
-
-  std::vector<Partition> *partitions = get_partitions_by_table_name("Planet");
-
-  std::cout << (*partitions)[0].node.host << "\n";
 
   count = static_cast<int>(array_elements(all_rewrite_memory));
   mysql_memory_register(category, all_rewrite_memory, count);
@@ -68,32 +62,36 @@ static int plugin_init(MYSQL_PLUGIN) {
 #define key_memory_lundgren PSI_NOT_INSTRUMENTED
 #endif /* HAVE_PSI_INTERFACE */
 
-//int i = 0;
+// int i = 0;
 
 static int lundgren_start(MYSQL_THD thd, mysql_event_class_t event_class,
-                         const void *event) {
+                          const void *event) {
   if (event_class == MYSQL_AUDIT_PARSE_CLASS) {
     const struct mysql_event_parse *event_parse =
         static_cast<const struct mysql_event_parse *>(event);
     if (event_parse->event_subclass == MYSQL_AUDIT_PARSE_POSTPARSE) {
-
       if (!accept_query(event_parse->query.str)) {
-          return 0;
+        return 0;
       }
+
+      std::vector<Partition> *partitions = get_partitions_by_table_name("Planet");
+
+      std::cout << (*partitions)[0].node.host << "\n";
 
       execute_distributed_query_set();
 
       std::string rq = "SELECT * FROM fake_temp_table_person";
       size_t query_length = rq.length();
 
-      char *rewritten_query = static_cast<char *>(my_malloc(key_memory_lundgren, query_length, MYF(0)));
+      char *rewritten_query = static_cast<char *>(
+          my_malloc(key_memory_lundgren, query_length, MYF(0)));
       sprintf(rewritten_query, "%s", rq.c_str());
       MYSQL_LEX_STRING new_query = {rewritten_query, query_length};
 
-
       mysql_parser_parse(thd, new_query, false, NULL, NULL);
 
-      *((int *)event_parse->flags) |= (int)MYSQL_AUDIT_PARSE_REWRITE_PLUGIN_QUERY_REWRITTEN;
+      *((int *)event_parse->flags) |=
+          (int)MYSQL_AUDIT_PARSE_REWRITE_PLUGIN_QUERY_REWRITTEN;
     }
   }
 
@@ -104,7 +102,7 @@ static int lundgren_start(MYSQL_THD thd, mysql_event_class_t event_class,
 static struct st_mysql_audit lundgren_descriptor = {
     MYSQL_AUDIT_INTERFACE_VERSION, /* interface version */
     NULL,                          /* release_thd()     */
-    lundgren_start,                 /* event_notify()    */
+    lundgren_start,                /* event_notify()    */
     {
         0,
         0,
