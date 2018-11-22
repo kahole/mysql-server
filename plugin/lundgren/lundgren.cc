@@ -28,9 +28,9 @@
 #include <mysql/service_mysql_alloc.h>
 #include <string.h>
 
-#include <mysql/service_command.h>
-#include <mysql/service_parser.h>
-#include <mysql/service_srv_session.h>
+//#include <mysql/service_command.h>
+//#include <mysql/service_parser.h>
+//#include <mysql/service_srv_session.h>
 
 #include "my_inttypes.h"
 #include "my_psi_config.h"
