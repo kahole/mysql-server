@@ -6,8 +6,13 @@
 struct Node
 {
     std::string host;
-    int port;
+    uint port;
     std::string database;
+
+    Node(char * host_in, uint port_in, char * database_in) : port(port_in) {
+        host = std::string(host_in);
+        database = std::string(database_in);
+    }
 };
 
 #endif  // LUNDGREN_NODE
