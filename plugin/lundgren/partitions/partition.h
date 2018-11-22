@@ -3,6 +3,7 @@
 #include "plugin/lundgren/partitions/shard_key.h"
 #include "plugin/lundgren/internal_query/internal_query_session.h"
 #include "plugin/lundgren/internal_query/sql_resultset.h"
+#include "plugin/lundgren/constants.h"
 
 #ifndef LUNDGREN_PARTITION
 #define LUNDGREN_PARTITION
@@ -17,9 +18,12 @@ struct Partition
 static Partition* get_partitions() {
     Internal_query_session *session = new Internal_query_session();
 
+    session->execute_resultless_query(PLUGIN_FLAG "USE test");
+
     Sql_resultset *result = session->execute_query(
-        "SELECT * FROM lundgren_partition p"
-        "INNER JOIN lundgren_node n on p.nodeId = n.id"
+        PLUGIN_FLAG
+        "SELECT * FROM lundgren_partition p\n"
+        "INNER JOIN lundgren_node n on p.nodeId = n.id\n"
         "INNER JOIN lundgren_shard_key s on p.shardKeyId = s.id;"
     );
 
@@ -29,8 +33,8 @@ static Partition* get_partitions() {
     std::vector<Partition> *partitions = new std::vector<Partition>;
     do {
 
-        Partition p = {.table_name = std::string(result->getString(3))};
-
+        Partition p = {};
+        p.table_name = std::string(result->getString(3));
         partitions->push_back(p);
         //result->getLong(1);
     } while (result->next());
