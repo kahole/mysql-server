@@ -176,7 +176,11 @@ INSTALL PLUGIN lundgren SONAME 'lundgren.so';
 
 #SHOW WARNINGS;
 
-#SELECT 'trigger rewrite plugin';
+SELECT 'trigger rewrite plugin';
+
+USE test;
+
+SELECT * FROM Eple;
 
 --sleep 99999999999
 

@@ -38,7 +38,7 @@
 
 #include <iostream>
 
-#include "plugin/lundgren/distributed_query_manager.h"
+//#include "plugin/lundgren/distributed_query_manager.h"
 #include "plugin/lundgren/distributed_query_rewriter.h"
 #include "plugin/lundgren/distributed_query.h"
 #include "plugin/lundgren/query_acceptance.h"
@@ -73,7 +73,7 @@ static int lundgren_start(MYSQL_THD thd, mysql_event_class_t event_class,
     if (event_parse->event_subclass == MYSQL_AUDIT_PARSE_POSTPARSE) {
 
 
-      if (!accept_query(event_parse->query.str)) {
+      if (!accept_query(thd, event_parse->query.str)) {
         return 0;
       }
 
@@ -83,16 +83,13 @@ static int lundgren_start(MYSQL_THD thd, mysql_event_class_t event_class,
       std::cout << distributed_query->rewritten_query << std::endl;
 
 
-      execute_distributed_query(distributed_query);
+      //execute_distributed_query(distributed_query);
 
-
-
-      std::string rq = "SELECT * FROM fake_temp_table_person";
-      size_t query_length = rq.length();
+      size_t query_length = distributed_query->rewritten_query.length();
 
       char *rewritten_query = static_cast<char *>(
           my_malloc(key_memory_lundgren, query_length, MYF(0)));
-      sprintf(rewritten_query, "%s", rq.c_str());
+      sprintf(rewritten_query, "%s", distributed_query->rewritten_query.c_str());
       MYSQL_LEX_STRING new_query = {rewritten_query, query_length};
 
       mysql_parser_parse(thd, new_query, false, NULL, NULL);

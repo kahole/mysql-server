@@ -12,15 +12,15 @@
 
 
 
-int catch_table(TABLE_LIST *tl, unsigned char *arg) {
+// int catch_table(TABLE_LIST *tl, unsigned char *arg) {
 
-  const char **result_string_ptr = (const char **)arg;
-  if (tl != NULL) {
-    *(result_string_ptr) = tl->table_name;
-    return 0;
-  }
-  return 1;
-}
+//   const char **result_string_ptr = (const char **)arg;
+//   if (tl != NULL) {
+//     *(result_string_ptr) = tl->table_name;
+//     return 0;
+//   }
+//   return 1;
+// }
 
 
 static Distributed_query* make_distributed_query(MYSQL_THD thd MY_ATTRIBUTE((unused))) {
@@ -29,18 +29,17 @@ static Distributed_query* make_distributed_query(MYSQL_THD thd MY_ATTRIBUTE((unu
     std::cout << (*partitions)[0].node.host << "\n";
 
 
-    const char *first_table_name;
-    mysql_parser_visit_tables(thd, catch_table, (unsigned char *)&first_table_name);
+    //const char *first_table_name;
+    //mysql_parser_visit_tables(thd, catch_table, (unsigned char *)&first_table_name);
 
 
 
-
-    std::vector<Partition_query> *partition_queries = new std::vector<Partition_query>;
+    //std::vector<Partition_query> *partition_queries = new std::vector<Partition_query>;
 
     Distributed_query *dq = new Distributed_query();
 
-    dq->partition_queries = partition_queries;
-
+    //dq->partition_queries = partition_queries;
+    dq->rewritten_query = "SELECT * FROM Planet;";
     
 
     return dq;

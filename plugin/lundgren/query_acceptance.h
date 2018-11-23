@@ -1,4 +1,5 @@
 #include <string.h>
+#include <mysql/service_parser.h>
 #include "plugin/lundgren/constants.h"
 
 #ifndef LUNDGREN_QUERY_ACCEPTANCE
@@ -11,21 +12,15 @@ static bool is_query_plugin_generated(const char *query) {
     return (strncmp(query, plugin_flag.c_str(), plugin_flag.length()) == 0);
 }
 
-static bool is_query_select_statement(const char *query) {
-    return (strncmp(query, "SELECT", 6) == 0);
-}
-
-static bool accept_query(const char *query) {
+static bool accept_query(MYSQL_THD thd, const char *query) {
 
     if (is_query_plugin_generated(query)) {
         return false;
     }
 
-    if (!is_query_select_statement(query)) {
-        return false;
-    }
+    int type = mysql_parser_get_statement_type(thd);
 
-    return true;
+    return (type == STATEMENT_TYPE_SELECT);
 }
 
 #endif  // LUNDGREN_QUERY_ACCEPTANCE
