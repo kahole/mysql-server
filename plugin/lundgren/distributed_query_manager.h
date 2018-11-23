@@ -9,7 +9,7 @@
 #define LUNDGREN_DQM
 
 int connect_node(std::string node, std::string query,
-                 std::string **result MY_ATTRIBUTE((unused))) {
+                 std::string *result) {
   mysqlx::Session s(node);
   mysqlx::SqlResult res = s.sql(query).execute();
   mysqlx::Row row;
@@ -26,25 +26,35 @@ int connect_node(std::string node, std::string query,
         std::string("),");
   }
   result_string.pop_back();
-  *result = new std::string(result_string);
+  *result = result_string;
   s.close();
 
   return 0;
 }
 
-static void execute_distributed_query(Distributed_query* distributed_query MY_ATTRIBUTE((unused))) {
-  const int num_thd = 2;
-  std::string nodes_metadata[] = {"127.0.0.1:12110", "127.0.0.1:13010"};
-  std::thread nodes_connection[num_thd];
+static void execute_distributed_query(Distributed_query* distributed_query) {
 
-  std::string *results[num_thd] = {NULL, NULL};
+  std::vector<Partition_query>* partition_queries = distributed_query->partition_queries;
+
+  const int num_thd = partition_queries->size();
+  // //std::string nodes_metadata[] = {"127.0.0.1:12110", "127.0.0.1:13010"};
+
+  std::thread *nodes_connection = new std::thread[num_thd];
+  std::string *results = new std::string[num_thd];
 
   for (int i = 0; i < num_thd; i++) {
-    std::string node = std::string("mysqlx://root@") + nodes_metadata[i] +
-                       std::string("/test");
 
-    std::string query =
-        std::string(PLUGIN_FLAG) + std::string("SELECT * FROM Person");
+    Partition_query pq = (*partition_queries)[i];
+
+    std::string node = std::string("mysqlx://root@")
+    + pq.node.host
+    + ":"
+    + std::to_string(pq.node.port)
+    + "/" + pq.node.database;
+
+    std::cout << node << std::endl;
+
+    std::string query = std::string(PLUGIN_FLAG) + (*partition_queries)[i].sql_statement;
     nodes_connection[i] = std::thread(connect_node, node, query, &results[i]);
   }
 
@@ -52,11 +62,12 @@ static void execute_distributed_query(Distributed_query* distributed_query MY_AT
     nodes_connection[i].join();
   }
 
+  // TODO: each query should be pointed to it's correct interim table
   std::string insert_query =
-      PLUGIN_FLAG "INSERT INTO fake_temp_table_person VALUES ";
+      PLUGIN_FLAG "INSERT INTO " + (*partition_queries)[0].interim_table_name + " VALUES ";
 
   for (int i = 0; i < num_thd; i++) {
-    insert_query += *results[i];
+    insert_query += results[i];
     if (i != num_thd - 1) {
       insert_query += ",";
     }
@@ -78,6 +89,8 @@ static void execute_distributed_query(Distributed_query* distributed_query MY_AT
   session->execute_resultless_query(insert_query.c_str());
 
   delete session;
+  delete nodes_connection;
+  delete results;
 }
 
 #endif  // LUNDGREN_DQM

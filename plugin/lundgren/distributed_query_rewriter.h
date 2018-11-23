@@ -51,7 +51,7 @@ static Distributed_query* make_distributed_query(MYSQL_THD thd) {
     Distributed_query *dq = new Distributed_query();
 
     dq->partition_queries = partition_queries;
-    dq->rewritten_query = "SELECT * FROM " + interim_table_name;
+    dq->rewritten_query = PLUGIN_FLAG "SELECT * FROM " + interim_table_name;
 
     return dq;
 }
