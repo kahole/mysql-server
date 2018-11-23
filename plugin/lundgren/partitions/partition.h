@@ -33,8 +33,9 @@ static std::vector<Partition>* get_partitions_by_table_name(std::string table_na
 
     std::vector<Partition> *partitions = new std::vector<Partition>;
 
-    if (result->get_rows() == 0)
-        return partitions;
+    if (result->get_rows() == 0) {
+        return NULL;
+    }
 
     do {
 

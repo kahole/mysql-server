@@ -31,10 +31,19 @@ SELECT height FROM Person INNER JOIN Planet on Person.homeworld = Planet.id;
 
 static Distributed_query* make_distributed_query(MYSQL_THD thd) {
 
-    const char *first_table_name;
+    const char *first_table_name = NULL;
     mysql_parser_visit_tables(thd, catch_table, (unsigned char *)&first_table_name);
 
+    if (first_table_name == NULL) {
+        return NULL;
+    }
+
     std::vector<Partition> *partitions = get_partitions_by_table_name(first_table_name);
+
+    if (partitions == NULL) {
+        return NULL;
+    }
+
     std::cout << (*partitions)[0].node.host << "\n";
 
     std::string interim_table_name = "static_interim_table";
@@ -51,6 +60,7 @@ static Distributed_query* make_distributed_query(MYSQL_THD thd) {
     Distributed_query *dq = new Distributed_query();
 
     dq->partition_queries = partition_queries;
+    // TODO: is the plugin flag needed here?
     dq->rewritten_query = PLUGIN_FLAG "SELECT * FROM " + interim_table_name;
 
     return dq;

@@ -165,8 +165,8 @@ CREATE TABLE lundgren_partition (
   FOREIGN KEY (shardKeyId) REFERENCES lundgren_shard_key(id)
 );
 
-INSERT INTO lundgren_node VALUES (1, "127.0.0.1", 13010, "test", "root", NULL);
-INSERT INTO lundgren_node VALUES (2, "127.0.0.1", 12110, "test", "root", NULL);
+INSERT INTO lundgren_node VALUES (1, "127.0.0.1", 12110, "test", "root", NULL);
+INSERT INTO lundgren_node VALUES (2, "127.0.0.1", 13010, "test", "root", NULL);
 INSERT INTO lundgren_node VALUES (3, "oim.oracle.sql", 13000, "test", "root", NULL);
 
 INSERT INTO lundgren_shard_key VALUES (1, "height", 0, 165);
@@ -193,5 +193,5 @@ SELECT * FROM Person;
 UNINSTALL PLUGIN lundgren;
 
 DROP TABLE Person;
-DROP TABLE fake_temp_table_person;
-DROP TABLE Planet;
+#DROP TABLE fake_temp_table_person;
+#DROP TABLE Planet;

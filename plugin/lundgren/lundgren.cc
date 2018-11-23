@@ -79,6 +79,9 @@ static int lundgren_start(MYSQL_THD thd, mysql_event_class_t event_class,
 
       Distributed_query* distributed_query = make_distributed_query(thd);
 
+      if (distributed_query == NULL) {
+          return 0;
+      }
 
       std::cout << distributed_query->rewritten_query << std::endl;
 

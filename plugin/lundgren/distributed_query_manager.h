@@ -73,24 +73,26 @@ static void execute_distributed_query(Distributed_query* distributed_query) {
     }
   }
 
-  Internal_query_session *session = new Internal_query_session();
-  session->execute_resultless_query(PLUGIN_FLAG "USE test");
-  session->execute_resultless_query(
-      PLUGIN_FLAG
-      "CREATE TABLE fake_temp_table_person"
-      "(id INT UNSIGNED PRIMARY KEY,"
+  std::string create_table_query = PLUGIN_FLAG
+      "CREATE TABLE " +
+      (*partition_queries)[0].interim_table_name +
+      " (id INT UNSIGNED PRIMARY KEY,"
       "name VARCHAR(30) NOT NULL,"
       "height INT UNSIGNED,"
       "mass INT UNSIGNED,"
       "hair_color VARCHAR(20),"
       "gender VARCHAR(20),"
       "homeworld INT UNSIGNED,"
-      "FOREIGN KEY (homeworld) REFERENCES Planet(id))");
+      "FOREIGN KEY (homeworld) REFERENCES Planet(id))";
+
+  Internal_query_session *session = new Internal_query_session();
+  session->execute_resultless_query(PLUGIN_FLAG "USE test");
+  session->execute_resultless_query(create_table_query.c_str());
   session->execute_resultless_query(insert_query.c_str());
 
   delete session;
-  delete nodes_connection;
-  delete results;
+  //delete nodes_connection;
+  //delete results;
 }
 
 #endif  // LUNDGREN_DQM
