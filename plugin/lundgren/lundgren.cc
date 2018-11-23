@@ -39,7 +39,8 @@
 #include <iostream>
 
 #include "plugin/lundgren/distributed_query_manager.h"
-#include "plugin/lundgren/partitions/partition.h"
+#include "plugin/lundgren/distributed_query_rewriter.h"
+#include "plugin/lundgren/distributed_query.h"
 #include "plugin/lundgren/query_acceptance.h"
 
 /* instrument the memory allocation */
@@ -70,15 +71,21 @@ static int lundgren_start(MYSQL_THD thd, mysql_event_class_t event_class,
     const struct mysql_event_parse *event_parse =
         static_cast<const struct mysql_event_parse *>(event);
     if (event_parse->event_subclass == MYSQL_AUDIT_PARSE_POSTPARSE) {
+
+
       if (!accept_query(event_parse->query.str)) {
         return 0;
       }
 
-      std::vector<Partition> *partitions = get_partitions_by_table_name("Planet");
+      Distributed_query* distributed_query = make_distributed_query(thd);
 
-      std::cout << (*partitions)[0].node.host << "\n";
 
-      execute_distributed_query_set();
+      std::cout << distributed_query->rewritten_query << std::endl;
+
+
+      execute_distributed_query(distributed_query);
+
+
 
       std::string rq = "SELECT * FROM fake_temp_table_person";
       size_t query_length = rq.length();

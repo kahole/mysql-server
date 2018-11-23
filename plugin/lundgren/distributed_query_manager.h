@@ -3,6 +3,7 @@
 #include <thread>
 #include "plugin/lundgren/constants.h"
 #include "plugin/lundgren/internal_query/internal_query_session.h"
+#include "plugin/lundgren/distributed_query.h"
 
 #ifndef LUNDGREN_DQM
 #define LUNDGREN_DQM
@@ -31,7 +32,7 @@ int connect_node(std::string node, std::string query,
   return 0;
 }
 
-static void execute_distributed_query_set() {
+static void execute_distributed_query(Distributed_query* distributed_query MY_ATTRIBUTE((unused))) {
   const int num_thd = 2;
   std::string nodes_metadata[] = {"127.0.0.1:12110", "127.0.0.1:13010"};
   std::thread nodes_connection[num_thd];
