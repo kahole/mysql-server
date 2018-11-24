@@ -24,7 +24,24 @@ int catch_table(TABLE_LIST *tl, unsigned char *arg) {
 
 /*
 SELECT height FROM Person;
+
+Regular select:
+SELECT {colums} FROM {table};
+
+
+Utvid sql_lex.cc
+
+SELECT_LEX::accept(Select_lex_visitor *visitor)
+
+Item er det vi trenger
+
+  for (Item *item = it++; item != end; item = it++)
+    if (walk_item(item, visitor)) return true;
+
+Average select:
 SELECT AVG(height) FROM Person;
+
+
 SELECT SUM(mass) FROM Planet;
 SELECT height FROM Person INNER JOIN Planet on Person.homeworld = Planet.id;
 */
