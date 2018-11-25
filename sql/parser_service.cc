@@ -91,6 +91,7 @@ class Service_visitor : public Select_lex_visitor {
       case Item::CACHE_ITEM:
         return m_processor(item, m_arg);
       default:
+        return m_processor(item, m_arg);
         break;
     }
     return false;

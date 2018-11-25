@@ -186,7 +186,7 @@ INSTALL PLUGIN lundgren SONAME 'lundgren.so';
 
 #SELECT * FROM Planet;
 
-SELECT * FROM Person;
+SELECT AVG(height) FROM Person;
 
 --sleep 99999999999
 
