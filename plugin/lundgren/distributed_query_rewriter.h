@@ -7,6 +7,7 @@
 #include "plugin/lundgren/partitions/partition.h"
 #include "sql/item.h"
 #include "sql/table.h"
+#include <algorithm>
 
 #ifndef LUNDGREN_DQR
 #define LUNDGREN_DQR
@@ -23,8 +24,11 @@ int catch_item(MYSQL_ITEM item, unsigned char *arg) {
     String s;
     item->print(&s, QT_ORDINARY);
 
-    L_Item fi = {std::string(s.ptr()), item->type()};
+    std::string item_sql = std::string(s.ptr());
+    //hack
+    item_sql.erase(std::remove(item_sql.begin(), item_sql.end(), '`'), item_sql.end());
 
+    L_Item fi = {item_sql, item->type()};
     fields->push_back(fi);
   }
 
@@ -42,14 +46,6 @@ int catch_table(TABLE_LIST *tl, unsigned char *arg) {
 
 // std::string write_partition_queries() {}
 // std::string write_final_query() {}
-
-/*
-
-Average select:
-SELECT AVG(height) FROM Person;
-->
-SELECT SUM(height) as height_sum, count(height) as height_count FROM Person;
-*/
 
 static Distributed_query *make_distributed_query(MYSQL_THD thd) {
   // Walk parse tree
@@ -83,23 +79,34 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
   std::string partition_query_string = "SELECT ";
   std::string final_query_string = "SELECT ";
 
-  for (std::vector<L_Item>::iterator f = fields.begin();
-       f != fields.end(); ++f) {
-    switch (f->type) {
-      case Item::FIELD_ITEM:
-        break;
-      case Item::SUM_FUNC_ITEM:
+  std::vector<L_Item>::iterator f = fields.begin();
 
+  switch (f->type) {
+    case Item::FIELD_ITEM:
+        partition_query_string += f->sql;
+        final_query_string += f->sql;
+      while (f != fields.end()) {
         ++f;
+        partition_query_string += ", " + f->sql;
+        final_query_string += ", " + f->sql;
+      }
+        partition_query_string += " ";
+        final_query_string += " ";
+      break;
+    case Item::SUM_FUNC_ITEM:
 
-        partition_query_string +=
-            "SUM(" + f->sql + ") as " + f->sql + "_sum, count(*) as " + f->sql + "_count ";
-        final_query_string += "(SUM(" + f->sql + "_sum) / SUM(" + f->sql + "_count)) as average ";
+      ++f;
 
-        break;
-      default:
-        break;
-    }
+      partition_query_string += "SUM(" + f->sql + ") as " + f->sql +
+                                "_sum, count(*) as " + f->sql + "_count ";
+      final_query_string +=
+          "(SUM(" + f->sql + "_sum) / SUM(" + f->sql + "_count)) as average ";
+
+      break;
+    default:
+      partition_query_string += "* ";
+      final_query_string += "* ";
+      break;
   }
 
   std::string from_table = "FROM " + std::string(first_table_name);
@@ -113,16 +120,14 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
 
   for (std::vector<Partition>::iterator p = partitions->begin();
        p != partitions->end(); ++p) {
-    Partition_query pq = {partition_query_string,
-                          interim_table_name, p->node};
+    Partition_query pq = {partition_query_string, interim_table_name, p->node};
     partition_queries->push_back(pq);
   }
 
   Distributed_query *dq = new Distributed_query();
 
   dq->partition_queries = partition_queries;
-  // TODO: is the plugin flag needed here?
-  dq->rewritten_query = PLUGIN_FLAG "SELECT * FROM " + interim_table_name;
+  dq->rewritten_query = final_query_string;
 
   return dq;
 }

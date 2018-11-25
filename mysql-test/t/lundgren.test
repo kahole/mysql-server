@@ -188,6 +188,10 @@ INSTALL PLUGIN lundgren SONAME 'lundgren.so';
 
 SELECT AVG(height) FROM Person;
 
+SELECT name FROM Person;
+
+SELECT * FROM Person;
+
 --sleep 99999999999
 
 UNINSTALL PLUGIN lundgren;
