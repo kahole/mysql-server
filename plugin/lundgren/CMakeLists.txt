@@ -31,5 +31,5 @@ MYSQL_ADD_PLUGIN(lundgren
   internal_query/sql_service_context_base.cc
   internal_query/sql_service_context.cc
   MODULE_ONLY MODULE_OUTPUT_NAME "lundgren"
-#  LINK_LIBRARIES "mysqlcppconn8"
+  LINK_LIBRARIES "mysqlcppconn8"
   )

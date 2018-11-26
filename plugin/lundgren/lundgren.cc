@@ -38,7 +38,7 @@
 
 #include <iostream>
 
-// #include "plugin/lundgren/distributed_query_manager.h"
+#include "plugin/lundgren/distributed_query_manager.h"
 #include "plugin/lundgren/distributed_query_rewriter.h"
 #include "plugin/lundgren/distributed_query.h"
 #include "plugin/lundgren/query_acceptance.h"
@@ -63,8 +63,6 @@ static int plugin_init(MYSQL_PLUGIN) {
 #define key_memory_lundgren PSI_NOT_INSTRUMENTED
 #endif /* HAVE_PSI_INTERFACE */
 
-// int i = 0;
-
 static int lundgren_start(MYSQL_THD thd, mysql_event_class_t event_class,
                           const void *event) {
   if (event_class == MYSQL_AUDIT_PARSE_CLASS) {
@@ -85,8 +83,7 @@ static int lundgren_start(MYSQL_THD thd, mysql_event_class_t event_class,
 
       std::cout << distributed_query->rewritten_query << std::endl;
 
-
-    //   execute_distributed_query(distributed_query);
+      execute_distributed_query(distributed_query);
 
       size_t query_length = distributed_query->rewritten_query.length();
 
