@@ -18,8 +18,8 @@ static bool accept_query(MYSQL_THD thd, const char *query) {
         return false;
     }
 
-    //std::string approved = "SELECT * FROM Person";
-    //return (strncmp(query, approved.c_str(), approved.length()) == 0);
+    std::string approved = "SELECT * FROM Person";
+    return (strncmp(query, approved.c_str(), approved.length()) == 0);
 
     int type = mysql_parser_get_statement_type(thd);
 

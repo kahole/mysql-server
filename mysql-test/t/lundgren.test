@@ -173,9 +173,9 @@ INSERT INTO lundgren_shard_key VALUES (1, "height", 0, 165);
 INSERT INTO lundgren_shard_key VALUES (2, "height", 165, 500);
 INSERT INTO lundgren_shard_key VALUES (3, "mass", 0, 165);
 
-#INSERT INTO lundgren_partition VALUES (1, 1, 1, "Person");
+INSERT INTO lundgren_partition VALUES (1, 1, 1, "Person");
 INSERT INTO lundgren_partition VALUES (2, 2, 2, "Person");
-INSERT INTO lundgren_partition VALUES (3, 3, 3, "Planet");
+#INSERT INTO lundgren_partition VALUES (3, 3, 3, "Planet");
 
 #--------------------------------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------------------------------
@@ -186,7 +186,7 @@ INSTALL PLUGIN lundgren SONAME 'lundgren.so';
 
 #SELECT AVG(height) FROM Person;
 
-#SELECT name FROM Person;
+#SELECT id, name, height, mass, hair_color, gender, homeworld FROM Person;
 
 SELECT * FROM Person;
 

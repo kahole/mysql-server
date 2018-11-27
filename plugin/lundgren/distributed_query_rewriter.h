@@ -85,10 +85,14 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
     case Item::FIELD_ITEM:
         partition_query_string += f->sql;
         final_query_string += f->sql;
+        if (f == fields.end()) {
+            break;
+        }
+        f++;
       while (f != fields.end()) {
-        ++f;
         partition_query_string += ", " + f->sql;
         final_query_string += ", " + f->sql;
+        f++;
       }
         partition_query_string += " ";
         final_query_string += " ";
@@ -104,8 +108,8 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
 
       break;
     default:
-      partition_query_string += "* ";
-      final_query_string += "* ";
+      //partition_query_string += "* ";
+      //final_query_string += "* ";
       break;
   }
 

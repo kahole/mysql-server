@@ -47,6 +47,8 @@ static std::vector<Partition>* get_partitions_by_table_name(std::string table_na
         partitions->push_back(p);
     } while (result->next());
 
+    delete session;
+
     return partitions;
 }
 
