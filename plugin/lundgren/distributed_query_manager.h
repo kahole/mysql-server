@@ -30,28 +30,38 @@ std::string generate_table_schema(mysqlx::SqlResult *res) {
   return return_string + ")";
 }
 
+std::string generate_result_string(mysqlx::SqlResult *res) {
+  mysqlx::Row row;
+  std::string result_string = "";
+  const mysqlx::Columns *columns = &res->getColumns();
+  uint num_columns = res->getColumnCount();
+  while ((row = res->fetchOne())) {
+    result_string += "(";
+    for (uint i = 0; i < num_columns; i++) {
+      switch ((*columns)[i].getType()) {
+        case mysqlx::Type::INT : 
+          result_string += std::to_string(int(row[i])); break;
+        case mysqlx::Type::STRING : 
+          result_string += std::string("\"") + std::string(row[i]) + std::string("\"") ; break;
+        default: break;
+      }
+      result_string += ",";
+    }
+    result_string.pop_back();
+    result_string += "),";
+  }
+  result_string.pop_back();
+  return result_string;
+}
+
 int connect_node(std::string node, std::string query,
                  std::string *result, std::string *table_schema) {
   mysqlx::Session s(node);
   mysqlx::SqlResult res = s.sql(query).execute();
 
+  *result = generate_result_string(&res);
   *table_schema = generate_table_schema(&res);
 
-  mysqlx::Row row;
-  std::string result_string;
-  while ((row = res.fetchOne())) {
-    // result_string += std::string(row[1]) + std::string("\n");
-    result_string +=
-        std::string("(") + std::to_string(int(row[0])) + std::string(",") +
-        std::string("\"") + std::string(row[1]) + std::string("\",") +
-        std::to_string(int(row[2])) + std::string(",") +
-        std::to_string(int(row[3])) + std::string(",") + std::string("\"") +
-        std::string(row[4]) + std::string("\",") + std::string("\"") +
-        std::string(row[5]) + std::string("\",") + std::to_string(int(row[6])) +
-        std::string("),");
-  }
-  result_string.pop_back();
-  *result = result_string;
   s.close();
 
   return 0;
@@ -98,18 +108,6 @@ static void execute_distributed_query(Distributed_query* distributed_query) {
       insert_query += ",";
     }
   }
-
-  // std::string create_table_query = PLUGIN_FLAG
-  //     "CREATE TABLE " +
-  //     (*partition_queries)[0].interim_table_name +
-  //     " (id INT UNSIGNED PRIMARY KEY,"
-  //     "name VARCHAR(30) NOT NULL,"
-  //     "height INT UNSIGNED,"
-  //     "mass INT UNSIGNED,"
-  //     "hair_color VARCHAR(20),"
-  //     "gender VARCHAR(20),"
-  //     "homeworld INT UNSIGNED,"
-  //     "FOREIGN KEY (homeworld) REFERENCES Planet(id))";
 
   std::string create_table_query = PLUGIN_FLAG
       "CREATE TABLE " +
