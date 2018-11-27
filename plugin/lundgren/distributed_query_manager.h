@@ -8,10 +8,34 @@
 #ifndef LUNDGREN_DQM
 #define LUNDGREN_DQM
 
+std::string get_column_length(unsigned long length) {
+  return std::to_string(length/4);
+}
+
+std::string generate_table_schema(mysqlx::SqlResult *res) {
+  std::string return_string = "(";
+  for (uint i = 0; i < res->getColumnCount(); i++) {
+    return_string += res->getColumn(i).getColumnName();
+    return_string += " ";
+    switch (res->getColumn(i).getType()) {
+      case mysqlx::Type::INT : 
+        return_string += (res->getColumn(i).isNumberSigned()) ? "INT" : "INT UNSIGNED"; break;
+      case mysqlx::Type::STRING : 
+        return_string += "VARCHAR(" + get_column_length(res->getColumn(i).getLength()) + ")"; break;
+      default: break;
+    }
+    return_string += ",";
+  }
+  return_string.pop_back();
+  return return_string + ")";
+}
+
 int connect_node(std::string node, std::string query,
-                 std::string *result) {
+                 std::string *result, std::string *table_schema) {
   mysqlx::Session s(node);
   mysqlx::SqlResult res = s.sql(query).execute();
+
+  *table_schema = generate_table_schema(&res);
 
   mysqlx::Row row;
   std::string result_string;
@@ -42,6 +66,7 @@ static void execute_distributed_query(Distributed_query* distributed_query) {
 
   std::thread *nodes_connection = new std::thread[num_thd];
   std::string *results = new std::string[num_thd];
+  std::string *table_schema = new std::string[num_thd];
 
   for (int i = 0; i < num_thd; i++) {
 
@@ -56,7 +81,7 @@ static void execute_distributed_query(Distributed_query* distributed_query) {
     std::cout << node << std::endl;
 
     std::string query = std::string(PLUGIN_FLAG) + (*partition_queries)[i].sql_statement;
-    nodes_connection[i] = std::thread(connect_node, node, query, &results[i]);
+    nodes_connection[i] = std::thread(connect_node, node, query, &results[i], &table_schema[i]);
   }
 
   for (int i = 0; i < num_thd; i++) {
@@ -74,17 +99,23 @@ static void execute_distributed_query(Distributed_query* distributed_query) {
     }
   }
 
+  // std::string create_table_query = PLUGIN_FLAG
+  //     "CREATE TABLE " +
+  //     (*partition_queries)[0].interim_table_name +
+  //     " (id INT UNSIGNED PRIMARY KEY,"
+  //     "name VARCHAR(30) NOT NULL,"
+  //     "height INT UNSIGNED,"
+  //     "mass INT UNSIGNED,"
+  //     "hair_color VARCHAR(20),"
+  //     "gender VARCHAR(20),"
+  //     "homeworld INT UNSIGNED,"
+  //     "FOREIGN KEY (homeworld) REFERENCES Planet(id))";
+
   std::string create_table_query = PLUGIN_FLAG
       "CREATE TABLE " +
       (*partition_queries)[0].interim_table_name +
-      " (id INT UNSIGNED PRIMARY KEY,"
-      "name VARCHAR(30) NOT NULL,"
-      "height INT UNSIGNED,"
-      "mass INT UNSIGNED,"
-      "hair_color VARCHAR(20),"
-      "gender VARCHAR(20),"
-      "homeworld INT UNSIGNED,"
-      "FOREIGN KEY (homeworld) REFERENCES Planet(id))";
+      table_schema[0];
+
 
   Internal_query_session *session = new Internal_query_session();
   session->execute_resultless_query(PLUGIN_FLAG "USE test");
