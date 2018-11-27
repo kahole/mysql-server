@@ -12,6 +12,7 @@ int connect_node(std::string node, std::string query,
                  std::string *result) {
   mysqlx::Session s(node);
   mysqlx::SqlResult res = s.sql(query).execute();
+
   mysqlx::Row row;
   std::string result_string;
   while ((row = res.fetchOne())) {
