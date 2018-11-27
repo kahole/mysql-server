@@ -15,11 +15,15 @@ std::string get_column_length(unsigned long length) {
 std::string generate_table_schema(mysqlx::SqlResult *res) {
   std::string return_string = "(";
   for (uint i = 0; i < res->getColumnCount(); i++) {
-    return_string += res->getColumn(i).getColumnName();
+    return_string += res->getColumn(i).getColumnLabel();
     return_string += " ";
     switch (res->getColumn(i).getType()) {
       case mysqlx::Type::INT : 
         return_string += (res->getColumn(i).isNumberSigned()) ? "INT" : "INT UNSIGNED"; break;
+      case mysqlx::Type::DECIMAL : 
+        return_string += (res->getColumn(i).isNumberSigned()) ? "DECIMAL" : "DECIMAL UNSIGNED"; break;
+      case mysqlx::Type::DOUBLE : 
+        return_string += (res->getColumn(i).isNumberSigned()) ? "DOUBLE" : "DOUBLE UNSIGNED"; break;
       case mysqlx::Type::STRING : 
         return_string += "VARCHAR(" + get_column_length(res->getColumn(i).getLength()) + ")"; break;
       default: break;
@@ -41,6 +45,10 @@ std::string generate_result_string(mysqlx::SqlResult *res) {
       switch ((*columns)[i].getType()) {
         case mysqlx::Type::INT : 
           result_string += std::to_string(int(row[i])); break;
+        case mysqlx::Type::DECIMAL :
+          result_string += std::to_string(double(row[i]));; break;
+        case mysqlx::Type::DOUBLE : 
+          result_string += std::to_string(double(row[i]));; break;
         case mysqlx::Type::STRING : 
           result_string += std::string("\"") + std::string(row[i]) + std::string("\"") ; break;
         default: break;

@@ -20,7 +20,11 @@ static bool accept_query(MYSQL_THD thd, const char *query) {
 
     //TODO: fix
     std::string approved = "SELECT * FROM Person";
-    return (strncmp(query, approved.c_str(), approved.length()) == 0);
+    std::string approved2 = "SELECT name FROM Person";
+    std::string approved3 = "SELECT AVG(height) FROM Person";
+    return (strncmp(query, approved.c_str(), approved.length()) == 0 ||
+            strncmp(query, approved2.c_str(), approved.length()) == 0 ||
+            strncmp(query, approved3.c_str(), approved.length()) == 0);
 
     int type = mysql_parser_get_statement_type(thd);
 

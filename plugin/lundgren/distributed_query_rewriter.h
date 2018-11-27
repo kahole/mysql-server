@@ -12,6 +12,26 @@
 #ifndef LUNDGREN_DQR
 #define LUNDGREN_DQR
 
+// TODO
+// this is a quick fix
+std::string random_string( size_t length )
+{
+    auto randchar = []() -> char
+    {
+        const char charset[] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz";
+        const size_t max_index = (sizeof(charset) - 1);
+        return charset[ rand() % max_index ];
+    };
+    std::string str(length,0);
+    std::generate_n( str.begin(), length, randchar );
+    return str;
+}
+
+//
+
 struct L_Item {
   std::string sql;
   Item::Type type;
@@ -114,7 +134,7 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
   }
 
   std::string from_table = "FROM " + std::string(first_table_name);
-  std::string interim_table_name = "static_interim_table";
+  std::string interim_table_name = random_string(30);
 
   partition_query_string += from_table;
   final_query_string += "FROM " + interim_table_name;
