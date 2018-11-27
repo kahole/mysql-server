@@ -18,6 +18,7 @@ static bool accept_query(MYSQL_THD thd, const char *query) {
         return false;
     }
 
+    //TODO: fix
     std::string approved = "SELECT * FROM Person";
     return (strncmp(query, approved.c_str(), approved.length()) == 0);
 
