@@ -21,9 +21,9 @@ struct Partition
 static std::vector<Partition>* get_partitions_by_table_name(std::string table_name MY_ATTRIBUTE((unused))) {
     Internal_query_session *session = new Internal_query_session();
 
-    session->execute_resultless_query(PLUGIN_FLAG "USE test");
+    session->execute_resultless_query("USE test");
 
-    std::string partition_query = PLUGIN_FLAG
+    std::string partition_query = 
         "SELECT * FROM lundgren_partition p\n"
         "INNER JOIN lundgren_node n on p.nodeId = n.id\n"
         "INNER JOIN lundgren_shard_key s on p.shardKeyId = s.id\n"

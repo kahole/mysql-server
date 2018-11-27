@@ -98,7 +98,7 @@ static void execute_distributed_query(Distributed_query* distributed_query) {
 
     std::cout << node << std::endl;
 
-    std::string query = std::string(PLUGIN_FLAG) + (*partition_queries)[i].sql_statement;
+    std::string query = (*partition_queries)[i].sql_statement;
     nodes_connection[i] = std::thread(connect_node, node, query, &results[i], &table_schema[i]);
   }
 
@@ -108,7 +108,7 @@ static void execute_distributed_query(Distributed_query* distributed_query) {
 
   // TODO: each query should be pointed to it's correct interim table
   std::string insert_query =
-      PLUGIN_FLAG "INSERT INTO " + (*partition_queries)[0].interim_table_name + " VALUES ";
+      "INSERT INTO " + (*partition_queries)[0].interim_table_name + " VALUES ";
 
   for (int i = 0; i < num_thd; i++) {
     insert_query += results[i];
@@ -117,14 +117,14 @@ static void execute_distributed_query(Distributed_query* distributed_query) {
     }
   }
 
-  std::string create_table_query = PLUGIN_FLAG
+  std::string create_table_query =
       "CREATE TABLE " +
       (*partition_queries)[0].interim_table_name +
       table_schema[0];
 
 
   Internal_query_session *session = new Internal_query_session();
-  session->execute_resultless_query(PLUGIN_FLAG "USE test");
+  session->execute_resultless_query("USE test");
   session->execute_resultless_query(create_table_query.c_str());
   session->execute_resultless_query(insert_query.c_str());
 

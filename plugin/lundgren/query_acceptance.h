@@ -5,7 +5,7 @@
 #ifndef LUNDGREN_QUERY_ACCEPTANCE
 #define LUNDGREN_QUERY_ACCEPTANCE
 
-static bool is_query_plugin_generated(const char *query) {
+static bool should_query_be_distributed(const char *query) {
 
     const std::string plugin_flag(PLUGIN_FLAG);
 
@@ -14,17 +14,9 @@ static bool is_query_plugin_generated(const char *query) {
 
 static bool accept_query(MYSQL_THD thd, const char *query) {
 
-    if (is_query_plugin_generated(query)) {
+    if (!should_query_be_distributed(query)) {
         return false;
     }
-
-    //TODO: fix
-    std::string approved = "SELECT * FROM Person";
-    std::string approved2 = "SELECT name FROM Person";
-    std::string approved3 = "SELECT AVG(height) FROM Person";
-    return (strncmp(query, approved.c_str(), approved.length()) == 0 ||
-            strncmp(query, approved2.c_str(), approved.length()) == 0 ||
-            strncmp(query, approved3.c_str(), approved.length()) == 0);
 
     int type = mysql_parser_get_statement_type(thd);
 
