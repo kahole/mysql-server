@@ -90,7 +90,8 @@ static void execute_distributed_query(Distributed_query* distributed_query) {
 
     Partition_query pq = (*partition_queries)[i];
 
-    std::string node = std::string("mysqlx://root@")
+    std::string node = std::string("mysqlx://")
+    + pq.node.user + "@"
     + pq.node.host
     + ":"
     + std::to_string(pq.node.port)

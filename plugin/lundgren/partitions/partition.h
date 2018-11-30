@@ -39,7 +39,7 @@ static std::vector<Partition>* get_partitions_by_table_name(std::string table_na
 
     do {
 
-        Node n = Node(result->getString(5), (uint)result->getLong(6), result->getString(7));
+        Node n = Node(result->getString(5), (uint)result->getLong(6), result->getString(7), result->getString(8));
         Shard_key s = Shard_key(result->getString(11), (uint)result->getLong(12), (uint)result->getLong(13));
 
         Partition p = Partition(result->getString(3), n, s);
