@@ -1,0 +1,77 @@
+--source suite/query_rewrite_plugins/include/have_plugin_lundgren.inc
+
+--replace_regex /\.dll/.so/
+
+CREATE TABLE Person (height INT);
+
+--echo Loading data ...
+
+INSERT INTO Person ( height ) VALUES (1), (2), (3), (4);
+INSERT INTO Person ( height ) SELECT height * rand() FROM Person;
+INSERT INTO Person ( height ) SELECT height * rand() FROM Person;
+INSERT INTO Person ( height ) SELECT height * rand() FROM Person;
+INSERT INTO Person ( height ) SELECT height * rand() FROM Person;
+INSERT INTO Person ( height ) SELECT height * rand() FROM Person;
+INSERT INTO Person ( height ) SELECT height * rand() FROM Person;
+INSERT INTO Person ( height ) SELECT height * rand() FROM Person;
+INSERT INTO Person ( height ) SELECT height * rand() FROM Person;
+INSERT INTO Person ( height ) SELECT height * rand() FROM Person;
+INSERT INTO Person ( height ) SELECT height * rand() FROM Person;
+INSERT INTO Person ( height ) SELECT height * rand() FROM Person;
+INSERT INTO Person ( height ) SELECT height * rand() FROM Person;
+INSERT INTO Person ( height ) SELECT height * rand() FROM Person; 
+INSERT INTO Person ( height ) SELECT height * rand() FROM Person; 
+INSERT INTO Person ( height ) SELECT height * rand() FROM Person; 
+INSERT INTO Person ( height ) SELECT height * rand() FROM Person; 
+INSERT INTO Person ( height ) SELECT height * rand() FROM Person; #524288
+
+--echo ... Done loading data
+
+#--------------------------------------------------------------------------------------------------------
+# META DATA TABLES
+#--------------------------------------------------------------------------------------------------------
+
+CREATE TABLE lundgren_node (
+  id INT UNSIGNED PRIMARY KEY,
+  host_l VARCHAR(80) NOT NULL,
+  port_l INT UNSIGNED,
+  database_l VARCHAR(80) NOT NULL,
+  username_l VARCHAR(50),
+  password_l VARCHAR(50)
+);
+
+CREATE TABLE lundgren_shard_key (
+  id INT UNSIGNED PRIMARY KEY,
+  column_name VARCHAR(80) NOT NULL,
+  range_start INT UNSIGNED,
+  range_end INT UNSIGNED
+);
+
+CREATE TABLE lundgren_partition (
+  id INT UNSIGNED PRIMARY KEY,
+  nodeId INT UNSIGNED,
+  shardKeyId INT UNSIGNED,
+  table_name VARCHAR(80) NOT NULL,
+  FOREIGN KEY (nodeId) REFERENCES lundgren_node(id),
+  FOREIGN KEY (shardKeyId) REFERENCES lundgren_shard_key(id)
+);
+
+INSERT INTO lundgren_node VALUES (1, "atum26.no.oracle.com", 13010, "test", "root", NULL);
+INSERT INTO lundgren_node VALUES (2, "127.0.0.1", 13010, "test", "root", NULL);
+
+INSERT INTO lundgren_shard_key VALUES (1, "height", 0, 165);
+INSERT INTO lundgren_shard_key VALUES (2, "height", 165, 500);
+
+INSERT INTO lundgren_partition VALUES (1, 1, 1, "Person");
+INSERT INTO lundgren_partition VALUES (2, 2, 2, "Person");
+
+#--------------------------------------------------------------------------------------------------------
+
+INSTALL PLUGIN lundgren SONAME 'lundgren.so';
+
+
+--sleep 999999999999
+
+UNINSTALL PLUGIN lundgren;
+
+--echo End of test
