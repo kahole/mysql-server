@@ -23,3 +23,7 @@ bld
 
 # Configuration files for Visual Studio Code
 .vscode/
+
+# Emacs swap files
+*~
+\#*\#
