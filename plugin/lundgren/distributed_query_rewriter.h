@@ -37,6 +37,10 @@ struct L_Item {
   Item::Type type;
 };
 
+struct L_Table {
+  std::string name;
+};
+
 int catch_item(MYSQL_ITEM item, unsigned char *arg) {
   std::vector<L_Item> *fields = (std::vector<L_Item> *)arg;
 
@@ -56,9 +60,13 @@ int catch_item(MYSQL_ITEM item, unsigned char *arg) {
 }
 
 int catch_table(TABLE_LIST *tl, unsigned char *arg) {
-  const char **result_string_ptr = (const char **)arg;
+  //const char **result_string_ptr = (const char **)arg;
+
+  std::vector<L_Table> *tables = (std::vector<L_Table> *)arg;
+
   if (tl != NULL) {
-    *(result_string_ptr) = tl->table_name;
+    L_Table t = {std::string(tl->table_name)};
+    tables->push_back(t);
     return 0;
   }
   return 1;
@@ -75,9 +83,12 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
 
   // mysql_parser_free_string(first_literal);
 
-  const char *first_table_name = NULL;
+  std::vector<L_Table> tables = std::vector<L_Table>();
+
   mysql_parser_visit_tables(thd, catch_table,
-                            (unsigned char *)&first_table_name);
+                            (unsigned char *)&tables);
+
+  const char * first_table_name = tables[0].name.c_str();
 
   if (first_table_name == NULL) {
     return NULL;
