@@ -41,6 +41,7 @@ struct L_Table {
   std::string name;
   std::string interim_name;
   std::vector<std::string> projections;
+  std::vector<std::string> interim_needed_projections;
 };
 
 // struct L_Query {
@@ -81,17 +82,6 @@ int catch_table(TABLE_LIST *tl, unsigned char *arg) {
   }
   return 1;
 }
-
-// static L_Query read_parse_tree(MYSQL_THD thd) {
-
-//   std::vector<L_Item> fields = std::vector<L_Item>();
-//   mysql_parser_visit_tree(thd, catch_item, (unsigned char *)&fields);
-
-//   std::vector<L_Table> tables = std::vector<L_Table>();
-//   mysql_parser_visit_tables(thd, catch_table, (unsigned char *)&tables);
-
-
-// }
 
 
 static void place_projection_in_table(std::string projection, std::vector<L_Table> *tables) {
@@ -138,10 +128,18 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
           f++;
         while (f != fields.end()) {
 
+
           if (f->sql.find("=") != std::string::npos) {
             where_clause += f->sql;
 
-            break;
+            // Simple fix to also retrieve where-clause fields in partition queries, those fields need to be present in the interim-tables!
+            f++;
+            continue;
+            // break;
+          }
+          if (f->type != Item::FIELD_ITEM) { //|| f->sql == "") {
+            f++;
+            continue;
           }
           place_projection_in_table(f->sql, &tables);
           f++;
@@ -191,6 +189,7 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
       while (p != table.projections.end()) {
         
         pqs += ", " + table.name + "." + *p;
+        ++p;
       }
 
       std::string from_table = " FROM " + std::string(table.name);
@@ -212,10 +211,17 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
     std::string final_query_string = "SELECT ";
 
     if (is_join) {
+
+      std::string join_on = std::string(where_clause);
+
       // iterate in reverse, because we get the tables in reverse order from mysql
       for (auto it = tables.rbegin(); it != tables.rend();) {
 
         L_Table table = *it;
+        
+        // make final query join clause by replacing table names with interim names in where_clause
+        // Warning! this only replaces the first occurence!
+        join_on.replace(join_on.find(table.name), table.name.length(), table.interim_name);
 
         std::vector<std::string>::iterator p = table.projections.begin();
 
@@ -225,13 +231,15 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
         while (p != table.projections.end()) {
           // final_query_string  += ", " + table.interim_name + "." + *p + " as " + table.name + "." + *p;
           final_query_string  += ", " + table.interim_name + "." + *p;
+          ++p;
         }
 
         if (++it != tables.rend())
           final_query_string += ", ";
 
       }
-      final_query_string += " FROM " + tables[1].interim_name + " JOIN " + tables[0].interim_name + " ON " + where_clause;
+      
+      final_query_string += " FROM " + tables[1].interim_name + " JOIN " + tables[0].interim_name + " ON " + join_on;
 
     } else {
       L_Table first_table = tables[0];
@@ -244,10 +252,15 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
       while (p != first_table.projections.end()) {
         // final_query_string  += ", " + first_table.interim_name + "." + *p + " as " + first_table.name + "." + *p;
         final_query_string  += ", " + first_table.interim_name + "." + *p;
+        ++p;
       }
       final_query_string += " FROM " + first_table.interim_name;
     }
 
+    // TODO:
+    // - Eneste som er feil her nå er at kolonne i join_on klausulen kommer med i projeksjonen til final_query selv når de ikke hører hjemme der
+
+    
     Distributed_query *dq = new Distributed_query();
 
     dq->partition_queries = partition_queries;
