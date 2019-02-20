@@ -40,6 +40,7 @@ struct L_Item {
 struct L_Table {
   std::string name;
   std::string interim_name;
+  std::vector<std::string> projections;
 };
 
 // struct L_Query {
@@ -92,6 +93,19 @@ int catch_table(TABLE_LIST *tl, unsigned char *arg) {
 
 // }
 
+
+static void place_projection_in_table(std::string projection, std::vector<L_Table> *tables) {
+
+  std::string field = projection.substr(projection.find(".") + 1, projection.length());
+  for (auto &table : *tables) {
+    if (table.name == projection.substr(0, projection.find("."))) {
+      table.projections.push_back(field);
+      break;
+    }
+  }
+  
+}
+
 static Distributed_query *make_distributed_query(MYSQL_THD thd) {
   // Walk parse tree
 
@@ -110,28 +124,17 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
     return NULL;
   }
 
-
-
-    std::string final_query_string = "SELECT ";
-
     std::vector<Partition_query> *partition_queries =
         new std::vector<Partition_query>;
 
       
-    // Write queries
-
-    std::string partition_query_string = "SELECT ";
     std::string where_clause = "";
 
     std::vector<L_Item>::iterator f = fields.begin();
 
     switch (f->type) {
       case Item::FIELD_ITEM:
-          partition_query_string += f->sql;
-          final_query_string += f->sql;
-          if (f == fields.end()) {
-              break;
-          }
+          place_projection_in_table(f->sql, &tables);
           f++;
         while (f != fields.end()) {
 
@@ -140,27 +143,22 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
 
             break;
           }
-
-          partition_query_string += ", " + f->sql;
-          final_query_string += ", " + f->sql;
+          place_projection_in_table(f->sql, &tables);
           f++;
         }
-          partition_query_string += " ";
-          final_query_string += " ";
         break;
       case Item::SUM_FUNC_ITEM:
 
-        ++f;
+        // THIS IS NOW BROKEN
+        // ++f;
 
-        partition_query_string += "SUM(" + f->sql + ") as " + f->sql +
-                                  "_sum, count(*) as " + f->sql + "_count ";
-        final_query_string +=
-            "(SUM(" + f->sql + "_sum) / SUM(" + f->sql + "_count)) as average ";
+        // partition_query_string += "SUM(" + f->sql + ") as " + f->sql +
+        //                           "_sum, count(*) as " + f->sql + "_count ";
+        // final_query_string +=
+        //     "(SUM(" + f->sql + "_sum) / SUM(" + f->sql + "_count)) as average ";
 
         break;
       default:
-        //partition_query_string += "* ";
-        //final_query_string += "* ";
         break;
     }
 
@@ -169,11 +167,11 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
       tables.pop_back();
     }
 
-    // for (auto &table : tables) {
+    for (auto &table : tables) {
     // iterate in reverse, because we get the tables in reverse order from mysql
-    for (auto it = tables.rbegin(); it != tables.rend(); ++it) {
+    // for (auto it = tables.rbegin(); it != tables.rend(); ++it) {
 
-      L_Table table = *it;
+      // L_Table table = *it;
 
       std::vector<Partition> *partitions =
         get_partitions_by_table_name(table.name);
@@ -182,10 +180,22 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
         return NULL;
       }
 
-      std::string from_table = "FROM " + std::string(table.name);
+      // std::string pqs = std::string(partition_query_string);
+      std::string pqs = "SELECT ";
+
+      std::vector<std::string>::iterator p = table.projections.begin();
+
+      pqs += table.name + "." + *p;
+      
+      ++p;
+      while (p != table.projections.end()) {
+        
+        pqs += ", " + table.name + "." + *p;
+      }
+
+      std::string from_table = " FROM " + std::string(table.name);
       table.interim_name = random_string(30);
 
-      std::string pqs = std::string(partition_query_string);
 
       pqs += from_table;
 
@@ -199,11 +209,43 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
       }
     }
 
+    std::string final_query_string = "SELECT ";
+
     if (is_join) {
-      final_query_string += "FROM " + tables[0].interim_name + " JOIN " + tables[1].interim_name + " ON " + where_clause;
+      // iterate in reverse, because we get the tables in reverse order from mysql
+      for (auto it = tables.rbegin(); it != tables.rend();) {
+
+        L_Table table = *it;
+
+        std::vector<std::string>::iterator p = table.projections.begin();
+
+        // ALIAS? for like kolonnenavn? trengs det?
+        final_query_string  += table.interim_name + "." + *p;
+        ++p;
+        while (p != table.projections.end()) {
+          // final_query_string  += ", " + table.interim_name + "." + *p + " as " + table.name + "." + *p;
+          final_query_string  += ", " + table.interim_name + "." + *p;
+        }
+
+        if (++it != tables.rend())
+          final_query_string += ", ";
+
+      }
+      final_query_string += " FROM " + tables[1].interim_name + " JOIN " + tables[0].interim_name + " ON " + where_clause;
 
     } else {
-      final_query_string += "FROM " + tables[0].interim_name;
+      L_Table first_table = tables[0];
+      std::vector<std::string>::iterator p = first_table.projections.begin();
+
+      // ALIAS trengs ikke her. Tror Person.blabla blir brukt dersom flere kolonner med samme navn, altså kun med flere tabeller
+      // final_query_string  += first_table.interim_name + "." + *p + " as " + first_table.name + "." + *p;
+      final_query_string  += first_table.interim_name + "." + *p;
+      ++p;
+      while (p != first_table.projections.end()) {
+        // final_query_string  += ", " + first_table.interim_name + "." + *p + " as " + first_table.name + "." + *p;
+        final_query_string  += ", " + first_table.interim_name + "." + *p;
+      }
+      final_query_string += " FROM " + first_table.interim_name;
     }
 
     Distributed_query *dq = new Distributed_query();
