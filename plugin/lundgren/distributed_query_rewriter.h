@@ -98,8 +98,6 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
   std::vector<L_Item> fields = std::vector<L_Item>();
   mysql_parser_visit_tree(thd, catch_item, (unsigned char *)&fields);
 
-  // mysql_parser_free_string(first_literal);
-
   std::vector<L_Table> tables = std::vector<L_Table>();
 
   mysql_parser_visit_tables(thd, catch_table,
@@ -167,10 +165,15 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
     }
 
     //hack
-    if (is_join)
+    if (is_join) {
       tables.pop_back();
+    }
 
-    for (auto &table : tables) {
+    // for (auto &table : tables) {
+    // iterate in reverse, because we get the tables in reverse order from mysql
+    for (auto it = tables.rbegin(); it != tables.rend(); ++it) {
+
+      L_Table table = *it;
 
       std::vector<Partition> *partitions =
         get_partitions_by_table_name(table.name);
@@ -186,7 +189,7 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
 
       pqs += from_table;
 
-      if (where_clause.length() > 0)
+      if (!is_join && where_clause.length() > 0)
         pqs += " WHERE " + where_clause;
 
       for (std::vector<Partition>::iterator p = partitions->begin();
