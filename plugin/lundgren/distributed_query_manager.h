@@ -75,6 +75,15 @@ int connect_node(std::string node, std::string query,
   return 0;
 }
 
+std::string generate_connection_string(Partition_query pq) {
+  return (std::string("mysqlx://")
+    + pq.node.user + "@"
+    + pq.node.host
+    + ":"
+    + std::to_string(pq.node.port)
+    + "/" + pq.node.database); 
+}
+
 static void execute_distributed_query(Distributed_query* distributed_query) {
 
   std::vector<Partition_query>* partition_queries = distributed_query->partition_queries;
@@ -90,12 +99,14 @@ static void execute_distributed_query(Distributed_query* distributed_query) {
 
     Partition_query pq = (*partition_queries)[i];
 
-    std::string node = std::string("mysqlx://")
-    + pq.node.user + "@"
-    + pq.node.host
-    + ":"
-    + std::to_string(pq.node.port)
-    + "/" + pq.node.database;
+    // std::string node = std::string("mysqlx://")
+    // + pq.node.user + "@"
+    // + pq.node.host
+    // + ":"
+    // + std::to_string(pq.node.port)
+    // + "/" + pq.node.database;
+    
+    std::string node = generate_connection_string(pq);
 
     std::cout << node << std::endl;
 
