@@ -41,6 +41,12 @@ struct L_Table {
   std::string name;
 };
 
+// struct L_Query {
+
+//   std::string placeholder;
+
+// };
+
 int catch_item(MYSQL_ITEM item, unsigned char *arg) {
   std::vector<L_Item> *fields = (std::vector<L_Item> *)arg;
 
@@ -51,6 +57,8 @@ int catch_item(MYSQL_ITEM item, unsigned char *arg) {
     std::string item_sql = std::string(s.ptr());
     //hack
     item_sql.erase(std::remove(item_sql.begin(), item_sql.end(), '`'), item_sql.end());
+    item_sql.erase(std::remove(item_sql.begin(), item_sql.end(), '('), item_sql.end());
+    item_sql.erase(std::remove(item_sql.begin(), item_sql.end(), ')'), item_sql.end());
 
     L_Item fi = {item_sql, item->type()};
     fields->push_back(fi);
@@ -72,8 +80,16 @@ int catch_table(TABLE_LIST *tl, unsigned char *arg) {
   return 1;
 }
 
-// std::string write_partition_queries() {}
-// std::string write_final_query() {}
+// static L_Query read_parse_tree(MYSQL_THD thd) {
+
+//   std::vector<L_Item> fields = std::vector<L_Item>();
+//   mysql_parser_visit_tree(thd, catch_item, (unsigned char *)&fields);
+
+//   std::vector<L_Table> tables = std::vector<L_Table>();
+//   mysql_parser_visit_tables(thd, catch_table, (unsigned char *)&tables);
+
+
+// }
 
 static Distributed_query *make_distributed_query(MYSQL_THD thd) {
   // Walk parse tree
@@ -96,7 +112,6 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
   }
 
 
-  // if (is_join) {
 
     std::string final_query_string = "SELECT ";
 
@@ -107,6 +122,7 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
     // Write queries
 
     std::string partition_query_string = "SELECT ";
+    std::string where_clause = "";
 
     std::vector<L_Item>::iterator f = fields.begin();
 
@@ -119,6 +135,13 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
           }
           f++;
         while (f != fields.end()) {
+
+          if (f->sql.find("=") != std::string::npos) {
+            where_clause += f->sql;
+
+            break;
+          }
+
           partition_query_string += ", " + f->sql;
           final_query_string += ", " + f->sql;
           f++;
@@ -161,6 +184,10 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
       std::string pqs = std::string(partition_query_string);
 
       pqs += from_table;
+
+      if (where_clause.length() > 0)
+        pqs += " WHERE " + where_clause;
+
       if (is_join) {
 
       } else {
@@ -184,91 +211,7 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
 
     return dq;
 
-  // }
 
-//----------------------------------------------------------------------------------
-//----------------------------------------------------------------------------------
-//----------------------------------------------------------------------------------
-
-  // else {
-  //   const char * first_table_name = tables[0].name.c_str();
-
-  //   // Resolve partitions
-
-  //   std::vector<Partition> *partitions =
-  //       get_partitions_by_table_name(first_table_name);
-
-  //   if (partitions == NULL) {
-  //     return NULL;
-  //   }
-
-  //   std::cout << (*partitions)[0].node.host << "\n";
-
-  //   // Write queries
-
-  //   std::string partition_query_string = "SELECT ";
-  //   std::string final_query_string = "SELECT ";
-
-  //   std::vector<L_Item>::iterator f = fields.begin();
-
-  //   switch (f->type) {
-  //     case Item::FIELD_ITEM:
-  //         partition_query_string += f->sql;
-  //         final_query_string += f->sql;
-  //         if (f == fields.end()) {
-  //             break;
-  //         }
-  //         f++;
-  //       while (f != fields.end()) {
-  //         partition_query_string += ", " + f->sql;
-  //         final_query_string += ", " + f->sql;
-  //         f++;
-  //       }
-  //         partition_query_string += " ";
-  //         final_query_string += " ";
-  //       break;
-  //     case Item::SUM_FUNC_ITEM:
-
-  //       ++f;
-
-  //       partition_query_string += "SUM(" + f->sql + ") as " + f->sql +
-  //                                 "_sum, count(*) as " + f->sql + "_count ";
-  //       final_query_string +=
-  //           "(SUM(" + f->sql + "_sum) / SUM(" + f->sql + "_count)) as average ";
-
-  //       break;
-  //     default:
-  //       //partition_query_string += "* ";
-  //       //final_query_string += "* ";
-  //       break;
-  //   }
-
-  //   std::string from_table = "FROM " + std::string(first_table_name);
-  //   std::string interim_table_name = random_string(30);
-
-  //   partition_query_string += from_table;
-  //   final_query_string += "FROM " + interim_table_name;
-
-  //   std::vector<Partition_query> *partition_queries =
-  //       new std::vector<Partition_query>;
-
-  //   for (std::vector<Partition>::iterator p = partitions->begin();
-  //       p != partitions->end(); ++p) {
-  //     Partition_query pq = {partition_query_string, interim_table_name, p->node};
-  //     partition_queries->push_back(pq);
-  //   }
-
-  //   Distributed_query *dq = new Distributed_query();
-
-  //   dq->partition_queries = partition_queries;
-  //   dq->rewritten_query = final_query_string;
-
-  //   return dq;
-  // }
-
-  //----------------------------------------------------------------------------------
-  //----------------------------------------------------------------------------------
-  //----------------------------------------------------------------------------------
 }
 
 #endif  // LUNDGREN_DQR
