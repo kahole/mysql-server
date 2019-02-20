@@ -171,10 +171,11 @@ INSERT INTO lundgren_node VALUES (2, "127.0.0.1", 13010, "test", "root", NULL);
 
 #INSERT INTO lundgren_shard_key VALUES (1, "height", 0, 165);
 INSERT INTO lundgren_shard_key VALUES (2, "height", 165, 500);
-#INSERT INTO lundgren_shard_key VALUES (3, "mass", 0, 165);
+INSERT INTO lundgren_shard_key VALUES (3, "mass", 0, 165);
 
+INSERT INTO lundgren_partition VALUES (1, 2, 2, "Person");
+INSERT INTO lundgren_partition VALUES (2, 2, 3, "Planet");
 #INSERT INTO lundgren_partition VALUES (1, 1, 1, "Person");
-INSERT INTO lundgren_partition VALUES (2, 2, 2, "Person");
 #INSERT INTO lundgren_partition VALUES (3, 3, 3, "Planet");
 
 #--------------------------------------------------------------------------------------------------------
@@ -188,11 +189,7 @@ SELECT ST_IsValid(NULL);
 
 #SELECT AVG(height) FROM Person;
 
-#SELECT Person.name, Planet.name FROM Person JOIN Planet on Person.homeworld = Planet.id;
-
-#SELECT id, name, height, mass, hair_color, gender, homeworld FROM Person;
-
-#SELECT * FROM Person;
+#/*distributed*/SELECT Person.name, Planet.name from Person JOIN Planet ON Person.homeworld = Planet.id;
 
 --sleep 99999999999
 
