@@ -151,10 +151,6 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
   }
 
   for (auto &table : tables) {
-    // iterate in reverse, because we get the tables in reverse order from mysql
-    // for (auto it = tables.rbegin(); it != tables.rend(); ++it) {
-
-    // L_Table table = *it;
 
     std::vector<Partition> *partitions =
         get_partitions_by_table_name(table.name);
@@ -173,6 +169,7 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
       ++p;
       if (p != table.projections.end()) partition_query_string += ", ";
     }
+    partition_query_string += ", ";
     p = table.where_transitive_projections.begin();
     while (p != table.where_transitive_projections.end()) {
       partition_query_string += table.name + "." + *p;
