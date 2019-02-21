@@ -27,3 +27,4 @@ bld
 # Emacs swap files
 *~
 \#*\#
+\.#*
