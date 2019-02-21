@@ -189,7 +189,7 @@ SELECT ST_IsValid(NULL);
 
 #SELECT AVG(height) FROM Person;
 
-#/*distributed*/SELECT Person.name, Planet.name from Person JOIN Planet ON Person.homeworld = Planet.id;
+/*distributed*/select Person.name, Planet.name from Person join Planet on Person.homeworld = Planet.id;
 
 --sleep 99999999999
 
