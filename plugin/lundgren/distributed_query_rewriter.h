@@ -12,26 +12,6 @@
 #ifndef LUNDGREN_DQR
 #define LUNDGREN_DQR
 
-// TODO
-// this is a quick fix. cite stackoverflow
-std::string random_string( size_t length )
-{
-    auto randchar = []() -> char
-    {
-        const char charset[] =
-        "0123456789"
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        "abcdefghijklmnopqrstuvwxyz";
-        const size_t max_index = (sizeof(charset) - 1);
-        return charset[ rand() % max_index ];
-    };
-    std::string str(length,0);
-    std::generate_n( str.begin(), length, randchar );
-    return str;
-}
-
-//
-
 struct L_Item {
   std::string sql;
   Item::Type type;
@@ -41,14 +21,11 @@ struct L_Table {
   std::string name;
   std::string interim_name;
   std::vector<std::string> projections;
-  std::vector<std::string> interim_needed_projections;
+  std::vector<std::string> where_transitive_projections;
 };
 
-// struct L_Query {
+std::string random_string( size_t length );
 
-//   std::string placeholder;
-
-// };
 
 int catch_item(MYSQL_ITEM item, unsigned char *arg) {
   std::vector<L_Item> *fields = (std::vector<L_Item> *)arg;
@@ -84,20 +61,26 @@ int catch_table(TABLE_LIST *tl, unsigned char *arg) {
 }
 
 
-static void place_projection_in_table(std::string projection, std::vector<L_Table> *tables) {
+static void place_projection_in_table(std::string projection, std::vector<L_Table> *tables, bool where_transitive_projection) {
 
   std::string field = projection.substr(projection.find(".") + 1, projection.length());
   for (auto &table : *tables) {
     if (table.name == projection.substr(0, projection.find("."))) {
-      table.projections.push_back(field);
+      if (where_transitive_projection) {
+        table.where_transitive_projections.push_back(field);
+      } else {
+        table.projections.push_back(field);
+      }
       break;
     }
   }
-  
 }
 
 static Distributed_query *make_distributed_query(MYSQL_THD thd) {
-  // Walk parse tree
+
+  /*
+   * Walk parse tree
+  */
 
   std::vector<L_Item> fields = std::vector<L_Item>();
   mysql_parser_visit_tree(thd, catch_item, (unsigned char *)&fields);
@@ -117,31 +100,29 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
     std::vector<Partition_query> *partition_queries =
         new std::vector<Partition_query>;
 
-      
     std::string where_clause = "";
+    bool passed_where_clause = false;
 
     std::vector<L_Item>::iterator f = fields.begin();
 
     switch (f->type) {
       case Item::FIELD_ITEM:
-          place_projection_in_table(f->sql, &tables);
-          f++;
-        while (f != fields.end()) {
 
+        while (f != fields.end()) {
 
           if (f->sql.find("=") != std::string::npos) {
             where_clause += f->sql;
+            passed_where_clause = true;
 
-            // Simple fix to also retrieve where-clause fields in partition queries, those fields need to be present in the interim-tables!
-            f++;
-            continue;
-            // break;
-          }
-          if (f->type != Item::FIELD_ITEM) { //|| f->sql == "") {
             f++;
             continue;
           }
-          place_projection_in_table(f->sql, &tables);
+          if (f->type != Item::FIELD_ITEM) {
+            f++;
+            continue;
+          }
+
+          place_projection_in_table(f->sql, &tables, passed_where_clause);
           f++;
         }
         break;
@@ -159,6 +140,11 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
       default:
         break;
     }
+
+
+    /*
+     * Generate partition queries
+    */
 
     //hack
     if (is_join) {
@@ -178,35 +164,44 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
         return NULL;
       }
 
-      // std::string pqs = std::string(partition_query_string);
-      std::string pqs = "SELECT ";
+      // std::string partition_query_string = std::string(partition_query_string);
+      std::string partition_query_string = "SELECT ";
 
       std::vector<std::string>::iterator p = table.projections.begin();
 
-      pqs += table.name + "." + *p;
-      
-      ++p;
       while (p != table.projections.end()) {
-        
-        pqs += ", " + table.name + "." + *p;
+        partition_query_string += table.name + "." + *p;
         ++p;
+        if (p != table.projections.end())
+          partition_query_string += ", ";
+      }
+      p = table.where_transitive_projections.begin();
+      while (p != table.where_transitive_projections.end()) {
+        partition_query_string += table.name + "." + *p;
+        ++p;
+        if (p != table.where_transitive_projections.end())
+          partition_query_string += ", ";
       }
 
       std::string from_table = " FROM " + std::string(table.name);
       table.interim_name = random_string(30);
 
 
-      pqs += from_table;
+      partition_query_string += from_table;
 
       if (!is_join && where_clause.length() > 0)
-        pqs += " WHERE " + where_clause;
+        partition_query_string += " WHERE " + where_clause;
 
       for (std::vector<Partition>::iterator p = partitions->begin();
           p != partitions->end(); ++p) {
-        Partition_query pq = {pqs, table.interim_name, p->node};
+        Partition_query pq = {partition_query_string, table.interim_name, p->node};
         partition_queries->push_back(pq);
       }
     }
+
+    /*
+     * Generate final rewritten query
+    */
 
     std::string final_query_string = "SELECT ";
 
@@ -226,12 +221,12 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
         std::vector<std::string>::iterator p = table.projections.begin();
 
         // ALIAS? for like kolonnenavn? trengs det?
-        final_query_string  += table.interim_name + "." + *p;
-        ++p;
         while (p != table.projections.end()) {
           // final_query_string  += ", " + table.interim_name + "." + *p + " as " + table.name + "." + *p;
-          final_query_string  += ", " + table.interim_name + "." + *p;
+          final_query_string  += table.interim_name + "." + *p;
           ++p;
+          if (p != table.projections.end())
+            final_query_string += ", ";
         }
 
         if (++it != tables.rend())
@@ -247,19 +242,17 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
 
       // ALIAS trengs ikke her. Tror Person.blabla blir brukt dersom flere kolonner med samme navn, altså kun med flere tabeller
       // final_query_string  += first_table.interim_name + "." + *p + " as " + first_table.name + "." + *p;
-      final_query_string  += first_table.interim_name + "." + *p;
-      ++p;
       while (p != first_table.projections.end()) {
         // final_query_string  += ", " + first_table.interim_name + "." + *p + " as " + first_table.name + "." + *p;
-        final_query_string  += ", " + first_table.interim_name + "." + *p;
+        final_query_string  += first_table.interim_name + "." + *p;
         ++p;
+        if (p != first_table.projections.end())
+          final_query_string += ", ";
       }
       final_query_string += " FROM " + first_table.interim_name;
     }
 
-    // TODO:
-    // - Eneste som er feil her nå er at kolonne i join_on klausulen kommer med i projeksjonen til final_query selv når de ikke hører hjemme der
-
+    // Construct distributed query object
     
     Distributed_query *dq = new Distributed_query();
 
@@ -267,8 +260,26 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
     dq->rewritten_query = final_query_string;
 
     return dq;
-
-
 }
+
+
+// TODO
+// this is a quick fix. cite stackoverflow
+std::string random_string( size_t length )
+{
+    auto randchar = []() -> char
+    {
+        const char charset[] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz";
+        const size_t max_index = (sizeof(charset) - 1);
+        return charset[ rand() % max_index ];
+    };
+    std::string str(length,0);
+    std::generate_n( str.begin(), length, randchar );
+    return str;
+}
+//-------------------------------------------------------------
 
 #endif  // LUNDGREN_DQR
