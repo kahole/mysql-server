@@ -96,20 +96,9 @@ static void execute_distributed_query(Distributed_query* distributed_query) {
   std::string *table_schema = new std::string[num_thd];
 
   for (int i = 0; i < num_thd; i++) {
-
     Partition_query pq = (*partition_queries)[i];
 
-    // std::string node = std::string("mysqlx://")
-    // + pq.node.user + "@"
-    // + pq.node.host
-    // + ":"
-    // + std::to_string(pq.node.port)
-    // + "/" + pq.node.database;
-    
     std::string node = generate_connection_string(pq);
-
-    // std::cout << node << std::endl;
-
     std::string query = (*partition_queries)[i].sql_statement;
     nodes_connection[i] = std::thread(connect_node, node, query, &results[i], &table_schema[i]);
   }
@@ -118,33 +107,17 @@ static void execute_distributed_query(Distributed_query* distributed_query) {
     nodes_connection[i].join();
   }
 
-  // // TODO: each query should be pointed to it's correct interim table
-  // std::string insert_query =
-  //     "INSERT INTO " + (*partition_queries)[0].interim_table_name + " VALUES ";
-
-  // for (int i = 0; i < num_thd; i++) {
-  //   insert_query += results[i];
-  //   if (i != num_thd - 1) {
-  //     insert_query += ",";
-  //   }
-  // }
-
   /* Generate INSERT strings for every interim table */
   std::map<std::string, std::string> insert_queries;
   for (int i = 0; i < num_thd; i++) {
     insert_queries[(*partition_queries)[i].interim_table_name] += results[i] + ',';
   }
 
-  /* Add INSERT INTO interim VALUES in front of the string and removing trailing comma*/
+  /* Add INSERT INTO interim VALUES in front of the string and removing trailing comma */
   for (auto& query : insert_queries) {
     query.second.pop_back();
     insert_queries[query.first] = "INSERT INTO " + query.first + " VALUES " + query.second;
   }
-
-  // std::string create_table_query =
-  //     "CREATE TABLE " +
-  //     (*partition_queries)[0].interim_table_name +
-  //     table_schema[0];
 
   /* Generate CREATE TABLE for table schemas for each interim */
   std::map<std::string, std::string> create_table_schemas;
@@ -153,11 +126,7 @@ static void execute_distributed_query(Distributed_query* distributed_query) {
     create_table_schemas[interim_table] = "CREATE TABLE " + interim_table + table_schema[i];
   }
 
-  // Internal_query_session *session = new Internal_query_session();
-  // session->execute_resultless_query("USE test");
-  // session->execute_resultless_query(create_table_query.c_str());
-  // session->execute_resultless_query(insert_query.c_str());
-
+  /* Perform internal queries to create and populate interim tables */
   Internal_query_session *session = new Internal_query_session();
   session->execute_resultless_query("USE test");
   for (const auto& create_table : create_table_schemas) {
