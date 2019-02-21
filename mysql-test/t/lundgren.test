@@ -198,3 +198,5 @@ UNINSTALL PLUGIN lundgren;
 DROP TABLE Person;
 #DROP TABLE fake_temp_table_person;
 #DROP TABLE Planet;
+
+
