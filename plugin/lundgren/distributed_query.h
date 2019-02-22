@@ -21,7 +21,7 @@ struct Partition_query {
 struct Interim_target {
     std::string interim_table_name;
     std::vector<Node> nodes;
-}
+};
 
 // TODO: bruk stages for å fikse multi-step strategier, slik som semi-join med 2 partisjonerte tabeller
 struct Stage {

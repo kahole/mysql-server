@@ -75,7 +75,7 @@ static int lundgren_start(MYSQL_THD thd, mysql_event_class_t event_class,
         return 0;
       }
 
-      Distributed_query* distributed_query = make_distributed_query(thd);
+      Distributed_query* distributed_query = make_distributed_query(thd, event_parse->query.str);
 
       if (distributed_query == NULL) {
           return 0;

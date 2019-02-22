@@ -79,7 +79,14 @@ static void place_projection_in_table(std::string projection,
   }
 }
 
-static Distributed_query *make_distributed_query(MYSQL_THD thd) {
+static bool detect_join(const char *query) {
+  std::string join_keyword = "JOIN";
+  std::string join_keyword_lower = "join";
+  return (strncmp(query, join_keyword.c_str(), join_keyword.length()) == 0
+        || strncmp(query, join_keyword_lower.c_str(), join_keyword_lower.length()) == 0);
+}
+
+static Distributed_query *make_distributed_query(MYSQL_THD thd, const char *query) {
   /*
    * Walk parse tree
    */
@@ -91,7 +98,8 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd) {
 
   mysql_parser_visit_tables(thd, catch_table, (unsigned char *)&tables);
 
-  bool is_join = tables.size() >= 2;
+  bool is_join = detect_join(query);
+  //bool is_join = tables.size() >= 2;
 
   if (tables.size() == 0) {
     return NULL;
