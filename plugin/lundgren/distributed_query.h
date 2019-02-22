@@ -5,6 +5,25 @@
 #ifndef LUNDGREN_DISTRIBUTED_QUERY
 #define LUNDGREN_DISTRIBUTED_QUERY
 
+// Flytt til egen fil:
+
+struct L_Table {
+  std::string name;
+  std::string interim_name;
+  std::vector<std::string> projections;
+  std::vector<std::string> where_transitive_projections;
+};
+
+
+struct L_Parser_info {
+  std::vector<L_Table> tables;
+  std::string where_clause;
+};
+
+//------------------------
+
+
+
 struct Partition_query {
     std::string sql_statement;
     std::string interim_table_name;

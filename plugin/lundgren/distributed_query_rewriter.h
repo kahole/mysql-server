@@ -17,14 +17,6 @@ struct L_Item {
   Item::Type type;
 };
 
-struct L_Table {
-  std::string name;
-  std::string interim_name;
-  std::vector<std::string> projections;
-  std::vector<std::string> where_transitive_projections;
-};
-
-std::string random_string(size_t length);
 
 int catch_item(MYSQL_ITEM item, unsigned char *arg) {
   std::vector<L_Item> *fields = (std::vector<L_Item> *)arg;
@@ -79,14 +71,10 @@ static void place_projection_in_table(std::string projection,
   }
 }
 
-static bool detect_join(const char *query) {
-  std::string join_keyword = "JOIN";
-  std::string join_keyword_lower = "join";
-  return (strncmp(query, join_keyword.c_str(), join_keyword.length()) == 0
-        || strncmp(query, join_keyword_lower.c_str(), join_keyword_lower.length()) == 0);
-}
 
-static Distributed_query *make_distributed_query(MYSQL_THD thd, const char *query) {
+
+static L_Parser_info *get_tables_from_parse_tree(MYSQL_THD thd) {
+
   /*
    * Walk parse tree
    */
@@ -98,15 +86,10 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd, const char *quer
 
   mysql_parser_visit_tables(thd, catch_table, (unsigned char *)&tables);
 
-  bool is_join = detect_join(query);
-  //bool is_join = tables.size() >= 2;
-
   if (tables.size() == 0) {
     return NULL;
   }
 
-  std::vector<Partition_query> *partition_queries =
-      new std::vector<Partition_query>;
 
   std::string where_clause = "";
   bool passed_where_clause = false;
@@ -149,137 +132,13 @@ static Distributed_query *make_distributed_query(MYSQL_THD thd, const char *quer
       break;
   }
 
-  /*
-   * Generate partition queries
-   */
 
-  // hack
-  if (is_join) {
-    tables.pop_back();
-  }
+  L_Parser_info *parser_info = new L_Parser_info();
+  parser_info->tables = tables;
+  parser_info->where_clause = where_clause;
 
-  for (auto &table : tables) {
-
-    std::vector<Partition> *partitions =
-        get_partitions_by_table_name(table.name);
-
-    if (partitions == NULL) {
-      return NULL;
-    }
-
-    // std::string partition_query_string = std::string(partition_query_string);
-    std::string partition_query_string = "SELECT ";
-
-    std::vector<std::string>::iterator p = table.projections.begin();
-
-    while (p != table.projections.end()) {
-      partition_query_string += table.name + "." + *p;
-      ++p;
-      if (p != table.projections.end()) partition_query_string += ", ";
-    }
-    partition_query_string += ", ";
-    p = table.where_transitive_projections.begin();
-    while (p != table.where_transitive_projections.end()) {
-      partition_query_string += table.name + "." + *p;
-      ++p;
-      if (p != table.where_transitive_projections.end())
-        partition_query_string += ", ";
-    }
-
-    std::string from_table = " FROM " + std::string(table.name);
-    table.interim_name = random_string(30);
-
-    partition_query_string += from_table;
-
-    if (!is_join && where_clause.length() > 0)
-      partition_query_string += " WHERE " + where_clause;
-
-    for (std::vector<Partition>::iterator p = partitions->begin();
-         p != partitions->end(); ++p) {
-      Partition_query pq = {partition_query_string, table.interim_name,
-                            p->node};
-      partition_queries->push_back(pq);
-    }
-  }
-
-  /*
-   * Generate final rewritten query
-   */
-
-  std::string final_query_string = "SELECT ";
-
-  if (is_join) {
-    std::string join_on = std::string(where_clause);
-
-    // iterate in reverse, because we get the tables in reverse order from mysql
-    for (auto it = tables.rbegin(); it != tables.rend();) {
-      L_Table table = *it;
-
-      // make final query join clause by replacing table names with interim
-      // names in where_clause Warning! this only replaces the first occurence!
-      join_on.replace(join_on.find(table.name), table.name.length(),
-                      table.interim_name);
-
-      std::vector<std::string>::iterator p = table.projections.begin();
-
-      // ALIAS? for like kolonnenavn? trengs det?
-      while (p != table.projections.end()) {
-        // final_query_string  += ", " + table.interim_name + "." + *p + " as "
-        // + table.name + "." + *p;
-        final_query_string += table.interim_name + "." + *p;
-        ++p;
-        if (p != table.projections.end()) final_query_string += ", ";
-      }
-
-      if (++it != tables.rend()) final_query_string += ", ";
-    }
-
-    final_query_string += " FROM " + tables[1].interim_name + " JOIN " +
-                          tables[0].interim_name + " ON " + join_on;
-
-  } else {
-    L_Table first_table = tables[0];
-    std::vector<std::string>::iterator p = first_table.projections.begin();
-
-    // ALIAS trengs ikke her. Tror Person.blabla blir brukt dersom flere
-    // kolonner med samme navn, altså kun med flere tabeller final_query_string
-    // += first_table.interim_name + "." + *p + " as " + first_table.name + "."
-    // + *p;
-    while (p != first_table.projections.end()) {
-      // final_query_string  += ", " + first_table.interim_name + "." + *p + "
-      // as " + first_table.name + "." + *p;
-      final_query_string += first_table.interim_name + "." + *p;
-      ++p;
-      if (p != first_table.projections.end()) final_query_string += ", ";
-    }
-    final_query_string += " FROM " + first_table.interim_name;
-  }
-
-  // Construct distributed query object
-
-  Distributed_query *dq = new Distributed_query();
-
-  dq->partition_queries = partition_queries;
-  dq->rewritten_query = final_query_string;
-
-  return dq;
+  return parser_info;
 }
 
-// TODO
-// this is a quick fix. cite stackoverflow
-std::string random_string(size_t length) {
-  auto randchar = []() -> char {
-    const char charset[] =
-        //"0123456789"
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        "abcdefghijklmnopqrstuvwxyz";
-    const size_t max_index = (sizeof(charset) - 1);
-    return charset[rand() % max_index];
-  };
-  std::string str(length, 0);
-  std::generate_n(str.begin(), length, randchar);
-  return str;
-}
-//-------------------------------------------------------------
 
 #endif  // LUNDGREN_DQR
