@@ -2,6 +2,7 @@
 #include "plugin/lundgren/distributed_query.h"
 #include "plugin/lundgren/partitions/node.h"
 #include "plugin/lundgren/partitions/partition.h"
+#include "plugin/lundgren/helpers.h"
 
 #ifndef LUNDGREN_DATA_TO_QUERY
 #define LUNDGREN_DATA_TO_QUERY
@@ -9,22 +10,6 @@
 
 // Pure Distributed_query strategy, can be fed into DQM
 
-// TODO
-// this is a quick fix. cite stackoverflow
-std::string random_string(size_t length) {
-  auto randchar = []() -> char {
-    const char charset[] =
-        //"0123456789"
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        "abcdefghijklmnopqrstuvwxyz";
-    const size_t max_index = (sizeof(charset) - 1);
-    return charset[rand() % max_index];
-  };
-  std::string str(length, 0);
-  std::generate_n(str.begin(), length, randchar);
-  return str;
-}
-//-------------------------------------------------------------
 
 static Distributed_query *make_data_to_query_distributed_query(L_Parser_info *parser_info, bool is_join) {
 
