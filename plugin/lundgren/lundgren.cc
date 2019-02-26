@@ -43,6 +43,7 @@
 #include "plugin/lundgren/distributed_query.h"
 #include "plugin/lundgren/query_acceptance.h"
 #include "plugin/lundgren/join_strategies/data_to_query.h"
+#include "plugin/lundgren/join_strategies/semi_join.h"
 
 /* instrument the memory allocation */
 #ifdef HAVE_PSI_INTERFACE
@@ -90,7 +91,8 @@ static int lundgren_start(MYSQL_THD thd, mysql_event_class_t event_class,
         case 2:
           break;
         default:
-          distributed_query = make_data_to_query_distributed_query(parser_info, true);
+          distributed_query = make_semi_join_distributed_query(parser_info);
+          //distributed_query = make_data_to_query_distributed_query(parser_info, true);
           break;
         }
         

@@ -1,6 +1,5 @@
 #include <string.h>
 #include "plugin/lundgren/distributed_query.h"
-#include "plugin/lundgren/partitions/node.h"
 #include "plugin/lundgren/partitions/partition.h"
 #include "plugin/lundgren/helpers.h"
 
@@ -58,8 +57,13 @@ static Distributed_query *make_data_to_query_distributed_query(L_Parser_info *pa
 
     for (std::vector<Partition>::iterator p = partitions->begin();
          p != partitions->end(); ++p) {
-      Partition_query pq = {partition_query_string, table.interim_name,
-                            p->node};
+
+      Node self(true);
+      std::vector<Node> target_nodes{self};
+
+      Interim_target interim_target = {table.interim_name, target_nodes};
+
+      Partition_query pq = {partition_query_string, p->node, interim_target};
       partition_queries->push_back(pq);
     }
   }
@@ -121,7 +125,9 @@ static Distributed_query *make_data_to_query_distributed_query(L_Parser_info *pa
 
   Distributed_query *dq = new Distributed_query();
 
-  dq->partition_queries = partition_queries;
+  Stage stage = {partition_queries};
+  dq->stages = new std::vector<Stage>;
+  dq->stages->push_back(stage);
   dq->rewritten_query = final_query_string;
 
   return dq;

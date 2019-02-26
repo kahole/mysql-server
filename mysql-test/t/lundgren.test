@@ -175,6 +175,7 @@ INSERT INTO lundgren_shard_key VALUES (3, "mass", 0, 165);
 
 INSERT INTO lundgren_partition VALUES (1, 2, 2, "Person");
 INSERT INTO lundgren_partition VALUES (2, 2, 3, "Planet");
+INSERT INTO lundgren_partition VALUES (3, 2, 3, "Planet");
 #INSERT INTO lundgren_partition VALUES (1, 1, 1, "Person");
 #INSERT INTO lundgren_partition VALUES (3, 3, 3, "Planet");
 

@@ -9,6 +9,9 @@ struct Node
     uint port;
     std::string database;
     std::string user;
+    bool is_self = false;
+
+    Node(bool is_self_in) : is_self(is_self_in) {}
 
     Node(char * host_in, uint port_in, char * database_in, char * user_in) : port(port_in) {
         host = std::string(host_in);

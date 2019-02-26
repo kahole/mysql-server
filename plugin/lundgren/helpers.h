@@ -18,5 +18,8 @@ std::string random_string(size_t length) {
   return str;
 }
 
+std::string generate_interim_name() {
+  return random_string(30);
+}
 
 #endif  // LUNDGREN_HELPERS

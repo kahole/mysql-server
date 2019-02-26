@@ -26,7 +26,9 @@ static bool accept_query(MYSQL_THD thd, const char *query) {
 static bool detect_join(const char *query) {
   std::string join_keyword = "JOIN";
   std::string join_keyword_lower = "join";
-  return (strncmp(query, join_keyword.c_str(), join_keyword.length()) == 0
-        || strncmp(query, join_keyword_lower.c_str(), join_keyword_lower.length()) == 0);
+
+  std::string query_str(query);
+
+  return (query_str.find(join_keyword) != std::string::npos || query_str.find(join_keyword_lower) != std::string::npos);
 }
 #endif  // LUNDGREN_QUERY_ACCEPTANCE
