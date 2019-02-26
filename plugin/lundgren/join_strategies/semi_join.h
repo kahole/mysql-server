@@ -35,6 +35,7 @@ static Distributed_query *make_semi_join_distributed_query(
     // Choose table with one partition, or ignore flag
     if (partitions->size() == 1 /* || ignore_table_partitions(table)*/) {
       stationary_table = &table;
+      delete partitions;
     }
     else {
       remote_partitions = partitions;
@@ -114,7 +115,6 @@ static Distributed_query *make_semi_join_distributed_query(
   stages.push_back(stage2);
 
 
-
   /*
    * Generate final rewritten query
    */
@@ -155,6 +155,8 @@ static Distributed_query *make_semi_join_distributed_query(
 
   dq->stages = stages;
   dq->rewritten_query = final_query_string;
+
+  delete remote_partitions;
 
   return dq;
 }

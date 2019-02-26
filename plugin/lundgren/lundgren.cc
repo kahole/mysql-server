@@ -92,7 +92,7 @@ static int lundgren_start(MYSQL_THD thd, mysql_event_class_t event_class,
           break;
         default:
           distributed_query = make_semi_join_distributed_query(parser_info);
-          //distributed_query = make_data_to_query_distributed_query(parser_info, true);
+          distributed_query = make_data_to_query_distributed_query(parser_info, true);
           break;
         }
         

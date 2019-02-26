@@ -65,6 +65,8 @@ static Distributed_query *make_data_to_query_distributed_query(L_Parser_info *pa
       Partition_query pq = {partition_query_string, p->node, interim_target};
       partition_queries.push_back(pq);
     }
+
+    delete partitions;
   }
 
   /*
@@ -130,7 +132,6 @@ static Distributed_query *make_data_to_query_distributed_query(L_Parser_info *pa
   dq->rewritten_query = final_query_string;
 
   return dq;
-
 }
 
 #endif  // LUNDGREN_DATA_TO_QUERY
