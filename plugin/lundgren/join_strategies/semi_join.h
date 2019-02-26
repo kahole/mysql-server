@@ -8,6 +8,18 @@
 
 // Semi join
 
+
+// // n = 1
+// static Distributed_query *make_one_sided_semi_join_distributed_query() {
+
+// }
+
+// // n > 1
+// static Distributed_query *make_recursive_semi_join_distributed_query() {
+
+// }
+
+
 static Distributed_query *make_semi_join_distributed_query(
     L_Parser_info *parser_info) {
 
@@ -21,6 +33,7 @@ static Distributed_query *make_semi_join_distributed_query(
   L_Table* stationary_table;
   L_Table* remote_table;
   std::vector<Partition>* remote_partitions;
+  bool found_stationary_table = false;
 
   for (auto &table : tables) {
 
@@ -31,9 +44,9 @@ static Distributed_query *make_semi_join_distributed_query(
       return NULL;
     }
 
-    // TODO: fix! only pick one table with size == 1!!
     // Choose table with one partition, or ignore flag
-    if (partitions->size() == 1 /* || ignore_table_partitions(table)*/) {
+    if (!found_stationary_table && (partitions->size() == 1 /* || ignore_table_partitions(table)*/)) {
+      found_stationary_table = true;
       stationary_table = &table;
       delete partitions;
     }
