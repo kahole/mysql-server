@@ -22,9 +22,6 @@ struct L_Parser_info {
 
 //------------------------
 
-// TODO:
-// Ved å bruke generell interim target får vi nok fleksibilitet til å gjøre alle rene SQL strategier
-// NB! for å bruke temp tables blir vi nødt til å holde connections i live, det er sikkert lurt uansett!
 struct Interim_target {
     std::string interim_table_name;
     std::vector<Node> nodes;
@@ -40,7 +37,6 @@ struct Partition_query {
     //std::vector<std::string> prep_statements;
 };
 
-// TODO: bruk stages for å fikse multi-step strategier, slik som semi-join med 2 partisjonerte tabeller
 struct Stage {
     std::vector<Partition_query> *partition_queries;
 };
