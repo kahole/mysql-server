@@ -2,13 +2,13 @@
 #include "plugin/lundgren/distributed_query.h"
 #include "plugin/lundgren/partitions/partition.h"
 #include "plugin/lundgren/helpers.h"
+#include "plugin/lundgren/join_strategies/common.h"
 
 #ifndef LUNDGREN_DATA_TO_QUERY
 #define LUNDGREN_DATA_TO_QUERY
 
 
 // Pure Distributed_query strategy, can be fed into DQM
-
 
 static Distributed_query *make_data_to_query_distributed_query(L_Parser_info *parser_info, bool is_join) {
 
@@ -73,38 +73,16 @@ static Distributed_query *make_data_to_query_distributed_query(L_Parser_info *pa
    * Generate final rewritten query
    */
 
-  std::string final_query_string = "SELECT ";
+  std::string final_query_string;
 
   if (is_join) {
-    std::string join_on = std::string(where_clause);
 
-    // iterate in reverse, because we get the tables in reverse order from mysql
-    for (auto it = tables.rbegin(); it != tables.rend();) {
-      L_Table table = *it;
+    final_query_string = generate_final_join_query_string(tables, where_clause);
+    
+   } else {
 
-      // make final query join clause by replacing table names with interim
-      // names in where_clause Warning! this only replaces the first occurence!
-      join_on.replace(join_on.find(table.name), table.name.length(),
-                      table.interim_name);
-
-      std::vector<std::string>::iterator p = table.projections.begin();
-
-      // ALIAS? for like kolonnenavn? trengs det?
-      while (p != table.projections.end()) {
-        // final_query_string  += ", " + table.interim_name + "." + *p + " as "
-        // + table.name + "." + *p;
-        final_query_string += table.interim_name + "." + *p;
-        ++p;
-        if (p != table.projections.end()) final_query_string += ", ";
-      }
-
-      if (++it != tables.rend()) final_query_string += ", ";
-    }
-
-    final_query_string += " FROM " + tables[1].interim_name + " JOIN " +
-                          tables[0].interim_name + " ON " + join_on;
-
-  } else {
+    final_query_string = "SELECT ";
+    
     L_Table first_table = tables[0];
     std::vector<std::string>::iterator p = first_table.projections.begin();
 

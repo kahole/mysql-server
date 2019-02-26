@@ -2,68 +2,27 @@
 #include "plugin/lundgren/distributed_query.h"
 #include "plugin/lundgren/helpers.h"
 #include "plugin/lundgren/partitions/partition.h"
+#include "plugin/lundgren/join_strategies/common.h"
 
 #ifndef LUNDGREN_SEMI_JOIN
 #define LUNDGREN_SEMI_JOIN
 
 // Semi join
 
+// n = 1
+static Distributed_query *make_one_sided_semi_join_distributed_query(L_Parser_info *parser_info, L_Table* stationary_table, L_Table* remote_table, std::vector<Partition>* remote_partitions) {
 
-// // n = 1
-// static Distributed_query *make_one_sided_semi_join_distributed_query() {
-
-// }
-
-// // n > 1
-// static Distributed_query *make_recursive_semi_join_distributed_query() {
-
-// }
-
-
-static Distributed_query *make_semi_join_distributed_query(
-    L_Parser_info *parser_info) {
-
-  // -----------------------------------------------------
   std::vector<L_Table> tables = parser_info->tables;
   std::string where_clause = parser_info->where_clause;
-  // ------------------------------------------------------
+
 
   std::vector<Stage> stages;
-
-  L_Table* stationary_table;
-  L_Table* remote_table;
-  std::vector<Partition>* remote_partitions;
-  bool found_stationary_table = false;
-
-  for (auto &table : tables) {
-
-    std::vector<Partition> *partitions =
-        get_partitions_by_table_name(table.name);
-
-    if (partitions == NULL) {
-      return NULL;
-    }
-
-    // Choose table with one partition, or ignore flag
-    if (!found_stationary_table && (partitions->size() == 1 /* || ignore_table_partitions(table)*/)) {
-      found_stationary_table = true;
-      stationary_table = &table;
-      delete partitions;
-    }
-    else {
-      remote_partitions = partitions;
-      remote_table = &table;
-    }
-  }
-
-  // -------------------------------------------------
 
   stationary_table->interim_name = generate_interim_name();
   remote_table->interim_name = generate_interim_name();
 
   // STAGE 1
 
-  // std::string join_column_interim_name = generate_interim_name();
   std::string stationary_join_column = stationary_table->where_transitive_projections[0];
   std::string remote_join_column = remote_table->where_transitive_projections[0];
 
@@ -76,19 +35,14 @@ static Distributed_query *make_semi_join_distributed_query(
   }
   
   Interim_target interim_target = {stationary_table->interim_name, target_nodes};
-
   Partition_query pq = {join_column_projection_query_string, Node(true), interim_target};
 
-  std::vector<Partition_query> stage1_queries;
-
-  stage1_queries.push_back(pq);
+  std::vector<Partition_query> stage1_queries{pq};
 
   Stage stage1 = { stage1_queries };  
   stages.push_back(stage1);
 
   // STAGE 2
-
-  // std::string collect_remote_table_interim_name = generate_interim_name();
 
   std::string semi_join_query_string = "SELECT ";
 
@@ -128,39 +82,28 @@ static Distributed_query *make_semi_join_distributed_query(
   stages.push_back(stage2);
 
 
-  /*
-   * Generate final rewritten query
-   */
+  // Construct distributed query object
 
-  std::string final_query_string = "SELECT ";
+  Distributed_query *dq = new Distributed_query();
 
-  std::string join_on = std::string(where_clause);
+  dq->stages = stages;
+  dq->rewritten_query = generate_final_join_query_string(tables, where_clause);
 
-  // iterate in reverse, because we get the tables in reverse order from mysql
-  for (auto it = tables.rbegin(); it != tables.rend();) {
-    L_Table table = *it;
+  delete remote_partitions;
 
-    // make final query join clause by replacing table names with interim
-    // names in where_clause Warning! this only replaces the first occurence!
-    join_on.replace(join_on.find(table.name), table.name.length(),
-                    table.interim_name);
+  return dq;
 
-    std::vector<std::string>::iterator p = table.projections.begin();
+  // TODO: remember delete remote_partitions
+}
 
-    // ALIAS? for like kolonnenavn? trengs det?
-    while (p != table.projections.end()) {
-      // final_query_string  += ", " + table.interim_name + "." + *p + " as "
-      // + table.name + "." + *p;
-      final_query_string += table.interim_name + "." + *p;
-      ++p;
-      if (p != table.projections.end()) final_query_string += ", ";
-    }
+// n > 1
+static Distributed_query *make_recursive_semi_join_distributed_query(L_Parser_info *parser_info, std::vector<Partition> *remote_partitions) {
 
-    if (++it != tables.rend()) final_query_string += ", ";
-  }
+  std::vector<Stage> stages;
 
-  final_query_string += " FROM " + tables[1].interim_name + " JOIN " +
-                        tables[0].interim_name + " ON " + join_on;
+
+  // use all the parameters hehe
+  std::string final_query_string = parser_info->where_clause;
 
   // Construct distributed query object
 
@@ -172,6 +115,58 @@ static Distributed_query *make_semi_join_distributed_query(
   delete remote_partitions;
 
   return dq;
+  // remember delete remote_partitions
+}
+
+
+static Distributed_query *make_semi_join_distributed_query(
+    L_Parser_info *parser_info) {
+
+  // -----------------------------------------------------
+  std::vector<L_Table> tables = parser_info->tables;
+  std::string where_clause = parser_info->where_clause;
+  // ------------------------------------------------------
+
+  std::vector<Stage> stages;
+
+  L_Table* stationary_table;
+  L_Table* remote_table;
+  std::vector<Partition>* remote_partitions;
+  bool has_stationary_table = false;
+
+  for (auto &table : tables) {
+
+    std::vector<Partition> *partitions =
+        get_partitions_by_table_name(table.name);
+
+    if (partitions == NULL) {
+      return NULL;
+    }
+
+    // Choose table with one partition, or ignore flag
+    if (!has_stationary_table && (partitions->size() == 1 /* || ignore_table_partitions(table)*/)) {
+      has_stationary_table = true;
+      stationary_table = &table;
+      delete partitions;
+    }
+    else {
+      // Ta vare på alle tables her i tilfelle n=2
+      remote_partitions = partitions;
+      remote_table = &table;
+    }
+  }
+
+
+  /* static Distributed_query *make_one_sided_semi_join_distributed_query(L_Parser_info *parser_info, L_Table* stationary_table, L_Table* remote_table, std::vector<Partition>* remote_partitions) { */
+  if (has_stationary_table) {
+    // n=1
+    return make_one_sided_semi_join_distributed_query(parser_info, stationary_table, remote_table, remote_partitions);
+    
+  }
+  else {
+    // n=2.. legge til støtte for n > 1?
+    return make_recursive_semi_join_distributed_query(parser_info, remote_partitions);
+  }
 }
 
 #endif  // LUNDGREN_SEMI_JOIN
