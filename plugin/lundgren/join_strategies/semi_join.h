@@ -16,8 +16,7 @@ static Distributed_query *make_semi_join_distributed_query(
   std::string where_clause = parser_info->where_clause;
   // ------------------------------------------------------
 
-  std::vector<Stage> *stages =
-      new std::vector<Stage>;
+  std::vector<Stage> stages;
 
   L_Table* stationary_table;
   L_Table* remote_table;
@@ -66,13 +65,12 @@ static Distributed_query *make_semi_join_distributed_query(
 
   Partition_query pq = {join_column_projection_query_string, Node(true), interim_target};
 
-  std::vector<Partition_query> *stage1_queries =
-      new std::vector<Partition_query>;
+  std::vector<Partition_query> stage1_queries;
 
-  stage1_queries->push_back(pq);
+  stage1_queries.push_back(pq);
 
   Stage stage1 = { stage1_queries };  
-  stages->push_back(stage1);
+  stages.push_back(stage1);
 
   // STAGE 2
 
@@ -105,16 +103,15 @@ static Distributed_query *make_semi_join_distributed_query(
   std::vector<Node> stage2_target_nodes{Node(true)}; //vector of self-node
   Interim_target stage2_interim_target = {remote_table->interim_name, stage2_target_nodes};
 
-  std::vector<Partition_query> *stage2_queries =
-      new std::vector<Partition_query>;
+  std::vector<Partition_query> stage2_queries;
 
   for (auto &p : *remote_partitions) {
     Partition_query pq = {semi_join_query_string, p.node, stage2_interim_target};
-    stage2_queries->push_back(pq);
+    stage2_queries.push_back(pq);
   }
 
   Stage stage2 = { stage2_queries };  
-  stages->push_back(stage2);
+  stages.push_back(stage2);
 
 
 

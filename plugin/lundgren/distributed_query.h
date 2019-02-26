@@ -38,13 +38,13 @@ struct Partition_query {
 };
 
 struct Stage {
-    std::vector<Partition_query> *partition_queries;
+    std::vector<Partition_query> partition_queries;
 };
 
 struct Distributed_query {
     std::string rewritten_query;
     //std::vector<Partition_query> *partition_queries;
-    std::vector<Stage> *stages;
+    std::vector<Stage> stages;
 };
 
 // TODO: Lag cleanup funksjon

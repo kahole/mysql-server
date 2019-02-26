@@ -16,8 +16,7 @@ static Distributed_query *make_data_to_query_distributed_query(L_Parser_info *pa
   std::string where_clause = parser_info->where_clause;
   
   
-  std::vector<Partition_query> *partition_queries =
-      new std::vector<Partition_query>;
+  std::vector<Partition_query> partition_queries;
 
   for (auto &table : tables) {
 
@@ -64,7 +63,7 @@ static Distributed_query *make_data_to_query_distributed_query(L_Parser_info *pa
       Interim_target interim_target = {table.interim_name, target_nodes};
 
       Partition_query pq = {partition_query_string, p->node, interim_target};
-      partition_queries->push_back(pq);
+      partition_queries.push_back(pq);
     }
   }
 
@@ -126,14 +125,12 @@ static Distributed_query *make_data_to_query_distributed_query(L_Parser_info *pa
   Distributed_query *dq = new Distributed_query();
 
   Stage stage = {partition_queries};
-  dq->stages = new std::vector<Stage>;
-  dq->stages->push_back(stage);
+  dq->stages = std::vector<Stage>();
+  dq->stages.push_back(stage);
   dq->rewritten_query = final_query_string;
 
   return dq;
 
 }
-
-
 
 #endif  // LUNDGREN_DATA_TO_QUERY
