@@ -34,8 +34,16 @@ std::vector<std::string> split(std::string strToSplit, char delimeter)
     return splittedStrings;
 }
 
+enum JOIN_STRATEGY {DATA_TO_QUERY, SEMI};
+const std::map<std::string, JOIN_STRATEGY> join_strategy_string_to_enum = {{"data_to_query", DATA_TO_QUERY}, {"semi", SEMI}};
+
+struct L_parsed_comment_args {
+  JOIN_STRATEGY join_strategy;
+  std::map<std::string, std::string> comment_args_lookup_table;
+};
+
 // Parses the parameters in the passed comment and creates a lookup table
-std::map<std::string, std::string> parse_query_comments(const char *query) {
+L_parsed_comment_args parse_query_comments(const char *query) {
   char delimiter;
   std::string query_string = std::string(query);
   int pos_start = query_string.find("<")+1;
@@ -46,13 +54,28 @@ std::map<std::string, std::string> parse_query_comments(const char *query) {
   std::vector<std::string> comment_parameters = split(query_string, delimiter);
 
   delimiter = '=';
+  L_parsed_comment_args parsed_args;
+  int i;
+  for (i = 0; i < int(comment_parameters.size()); i++){
+    if (comment_parameters[i].find("join_strategy") != std::string::npos) {
+      int pos_delimiter = comment_parameters[i].find(delimiter);
+      std::string js = comment_parameters[i].substr(pos_delimiter+1);
+      parsed_args.join_strategy = join_strategy_string_to_enum.at(js);
+      break;
+    }
+  }
+  comment_parameters.erase(comment_parameters.begin() + i);
+
+
+  delimiter = '=';
   std::map<std::string, std::string> comment_parameter_lookup_table;
   for (auto const parameter : comment_parameters) {
     int pos_delimiter = parameter.find(delimiter);
-    comment_parameter_lookup_table[parameter.substr(0,pos_delimiter)] = parameter.substr(pos_delimiter+1);
+    parsed_args.comment_args_lookup_table[parameter.substr(0,pos_delimiter)] = parameter.substr(pos_delimiter+1);
+
   } 
 
-  return comment_parameter_lookup_table;
+  return parsed_args;
 }
 
 
