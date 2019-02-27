@@ -111,6 +111,12 @@ static Distributed_query *make_recursive_semi_join_distributed_query(L_Parser_in
   target_nodes.push_back(Node(true));
   Interim_target interim_target = {join_union_interim_table_name , target_nodes};
 
+  // TODO:
+  // for n=2
+  //  - choose ignore flag for table with the most partitions!
+  //  - send query to every node with a partition of the choosen table
+  //  - this avoids the "multiple" query problem
+
   for (auto &p : *remote_partitions) {
     Partition_query pq = {recursive_distributed_join_query_string, p.node, interim_target};
     stage1.partition_queries.push_back(pq);
@@ -163,8 +169,10 @@ static Distributed_query *make_semi_join_distributed_query(L_Parser_info *parser
       delete partitions;
     }
     else {
-      // Ta vare på alle tables her i tilfelle n=2
       remote_partitions = partitions;
+      // Keep every remote partition
+      //remote_partitions->insert(remote_partitions->end(), partitions->begin(), partitions->end());
+      // Keep last encountered remote_table, i guess, this means we only support n=2.
       remote_table = &table;
     }
   }
