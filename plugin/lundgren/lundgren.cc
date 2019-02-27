@@ -43,6 +43,7 @@
 #include "plugin/lundgren/distributed_query.h"
 #include "plugin/lundgren/query_acceptance.h"
 #include "plugin/lundgren/join_strategies/data_to_query.h"
+#include "plugin/lundgren/helpers.h"
 
 /* instrument the memory allocation */
 #ifdef HAVE_PSI_INTERFACE
@@ -85,9 +86,12 @@ static int lundgren_start(MYSQL_THD thd, mysql_event_class_t event_class,
       if (is_join) {
         parser_info->tables.pop_back(); //hack
 
-        // TODO: strategy switch
-        switch(1) {
-        case 2:
+        L_parsed_comment_args parsed_args = parse_query_comments(event_parse->query.str);
+
+        switch(parsed_args.join_strategy) {
+        case DATA_TO_QUERY:
+          break;
+        case SEMI:
           break;
         default:
           distributed_query = make_data_to_query_distributed_query(parser_info, true);
