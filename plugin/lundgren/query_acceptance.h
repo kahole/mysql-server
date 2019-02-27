@@ -8,8 +8,8 @@
 static bool should_query_be_distributed(const char *query) {
 
     const std::string plugin_flag(PLUGIN_FLAG);
-
-    return (strncmp(query, plugin_flag.c_str(), plugin_flag.length()) == 0);
+    const std::string query_string(query);
+    return (query_string.find(plugin_flag) != std::string::npos);
 }
 
 static bool accept_query(MYSQL_THD thd, const char *query) {
