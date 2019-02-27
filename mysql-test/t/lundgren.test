@@ -184,13 +184,14 @@ INSERT INTO lundgren_partition VALUES (3, 2, 3, "Planet");
 
 INSTALL PLUGIN lundgren SONAME 'lundgren.so';
 
-SELECT ST_IsValid(NULL);
+# SELECT ST_IsValid(NULL);
 
 #SHOW WARNINGS;
 
 #SELECT AVG(height) FROM Person;
 
-# /*distributed*/select Person.name, Planet.name from Person join Planet on Person.homeworld = Planet.id;
+/*distributed<join_strategy=semi,ignore_partitions_of_table=Person>*/select Person.name, Planet.name from Person join Planet on Person.homeworld = Planet.id;
+
 
 --sleep 99999999999
 

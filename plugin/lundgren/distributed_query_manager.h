@@ -136,7 +136,7 @@ static void execute_distributed_query(Distributed_query* distributed_query) {
     session->execute_resultless_query(create_table.second.c_str());;
     session->execute_resultless_query(insert_queries[create_table.first].c_str());
   }
-
+  
   delete session;
   //delete nodes_connection;
   //delete results;
