@@ -105,7 +105,6 @@ static Distributed_query *make_data_to_query_distributed_query(L_Parser_info *pa
   Distributed_query *dq = new Distributed_query();
 
   Stage stage = {partition_queries};
-  dq->stages = std::vector<Stage>();
   dq->stages.push_back(stage);
   dq->rewritten_query = final_query_string;
 

@@ -3,6 +3,7 @@
 #include "plugin/lundgren/helpers.h"
 #include "plugin/lundgren/partitions/partition.h"
 #include "plugin/lundgren/join_strategies/common.h"
+#include "plugin/lundgren/constants.h"
 
 #ifndef LUNDGREN_SEMI_JOIN
 #define LUNDGREN_SEMI_JOIN
@@ -22,6 +23,7 @@ static Distributed_query *make_one_sided_semi_join_distributed_query(L_Parser_in
   remote_table->interim_name = generate_interim_name();
 
   // STAGE 1
+  Stage stage1;
 
   std::string stationary_join_column = stationary_table->where_transitive_projections[0];
   std::string remote_join_column = remote_table->where_transitive_projections[0];
@@ -37,12 +39,11 @@ static Distributed_query *make_one_sided_semi_join_distributed_query(L_Parser_in
   Interim_target interim_target = {stationary_table->interim_name, target_nodes};
   Partition_query pq = {join_column_projection_query_string, Node(true), interim_target};
 
-  std::vector<Partition_query> stage1_queries{pq};
-
-  Stage stage1 = { stage1_queries };  
+  stage1.partition_queries.push_back(pq);
   stages.push_back(stage1);
 
   // STAGE 2
+  Stage stage2;
 
   std::string semi_join_query_string = "SELECT ";
 
@@ -71,23 +72,15 @@ static Distributed_query *make_one_sided_semi_join_distributed_query(L_Parser_in
   std::vector<Node> stage2_target_nodes{Node(true)}; //vector of self-node
   Interim_target stage2_interim_target = {remote_table->interim_name, stage2_target_nodes};
 
-  std::vector<Partition_query> stage2_queries;
-
   for (auto &p : *remote_partitions) {
     Partition_query pq = {semi_join_query_string, p.node, stage2_interim_target};
-    stage2_queries.push_back(pq);
+    stage2.partition_queries.push_back(pq);
   }
 
-  Stage stage2 = { stage2_queries };  
   stages.push_back(stage2);
 
-
   // Construct distributed query object
-
-  Distributed_query *dq = new Distributed_query();
-
-  dq->stages = stages;
-  dq->rewritten_query = generate_final_join_query_string(tables, where_clause);
+  Distributed_query *dq = new Distributed_query{generate_final_join_query_string(tables, where_clause), stages};
 
   delete remote_partitions;
 
@@ -97,20 +90,41 @@ static Distributed_query *make_one_sided_semi_join_distributed_query(L_Parser_in
 }
 
 // n > 1
-static Distributed_query *make_recursive_semi_join_distributed_query(L_Parser_info *parser_info, std::vector<Partition> *remote_partitions) {
+static Distributed_query *make_recursive_semi_join_distributed_query(L_Parser_info *parser_info MY_ATTRIBUTE((unused)), std::vector<Partition> *remote_partitions) {
 
   std::vector<Stage> stages;
 
+  Stage stage1;
 
-  // use all the parameters hehe
-  std::string final_query_string = parser_info->where_clause;
+  std::string join_union_interim_table_name = generate_interim_name();
+
+  //Distributed Partition queries
+
+
+  // TODO: er vel egentlig bare å ta original-spørringen og modifisere flaggene!
+  //   > eller byggge den opp på nytt
+  //std::string recursive_distributed_join_query_string = PLUGIN_FLAG "SELECT ";// + stationary_join_column + " FROM " + stationary_table->name;
+  std::string recursive_distributed_join_query_string = "SELECT ";// + stationary_join_column + " FROM " + stationary_table->name;
+
+
+  std::vector<Node> target_nodes;
+  target_nodes.push_back(Node(true));
+  Interim_target interim_target = {join_union_interim_table_name , target_nodes};
+
+  for (auto &p : *remote_partitions) {
+    Partition_query pq = {recursive_distributed_join_query_string, p.node, interim_target};
+    stage1.partition_queries.push_back(pq);
+  }
+  
+  stages.push_back(stage1);
+
+  // Final query
+
+  std::string final_query_string = "SELECT * FROM " + join_union_interim_table_name;
 
   // Construct distributed query object
 
-  Distributed_query *dq = new Distributed_query();
-
-  dq->stages = stages;
-  dq->rewritten_query = final_query_string;
+  Distributed_query *dq = new Distributed_query{final_query_string, stages};
 
   delete remote_partitions;
 
@@ -119,8 +133,7 @@ static Distributed_query *make_recursive_semi_join_distributed_query(L_Parser_in
 }
 
 
-static Distributed_query *make_semi_join_distributed_query(
-    L_Parser_info *parser_info) {
+static Distributed_query *make_semi_join_distributed_query(L_Parser_info *parser_info) {
 
   // -----------------------------------------------------
   std::vector<L_Table> tables = parser_info->tables;
@@ -155,7 +168,6 @@ static Distributed_query *make_semi_join_distributed_query(
       remote_table = &table;
     }
   }
-
 
   /* static Distributed_query *make_one_sided_semi_join_distributed_query(L_Parser_info *parser_info, L_Table* stationary_table, L_Table* remote_table, std::vector<Partition>* remote_partitions) { */
   if (has_stationary_table) {
