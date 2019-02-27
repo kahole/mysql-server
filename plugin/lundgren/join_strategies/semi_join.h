@@ -8,12 +8,16 @@
 #ifndef LUNDGREN_SEMI_JOIN
 #define LUNDGREN_SEMI_JOIN
 
+#define IGNORE_TABLE_PARTITIONS_FLAG "ignore_table_partitions"
+
 // Semi join
 
-// n = 1
-static Distributed_query *make_one_sided_semi_join_distributed_query(L_Parser_info *parser_info, L_Table* stationary_table, L_Table* remote_table, std::vector<Partition>* remote_partitions) {
+static std::string semi_join_generate_final_join_query_string(L_Table *stationary_table, L_Table *remote_table, std::string join_on);
 
-  std::vector<L_Table> tables = parser_info->tables;
+// n = 1
+static Distributed_query *make_one_sided_semi_join_distributed_query(L_Parser_info *parser_info MY_ATTRIBUTE((unused)), L_Table* stationary_table, L_Table* remote_table, std::vector<Partition>* remote_partitions) {
+
+  //std::vector<L_Table> *tables = &(parser_info->tables);
   std::string where_clause = parser_info->where_clause;
 
 
@@ -28,7 +32,7 @@ static Distributed_query *make_one_sided_semi_join_distributed_query(L_Parser_in
   std::string stationary_join_column = stationary_table->where_transitive_projections[0];
   std::string remote_join_column = remote_table->where_transitive_projections[0];
 
-  std::string join_column_projection_query_string = "SELECT " + stationary_join_column + " FROM " + stationary_table->name;
+  std::string join_column_projection_query_string = "SELECT DISTINCT " + stationary_join_column + " FROM " + stationary_table->name;
 
   std::vector<Node> target_nodes;
 
@@ -64,7 +68,7 @@ static Distributed_query *make_one_sided_semi_join_distributed_query(L_Parser_in
       semi_join_query_string += ", ";
   }
 
-  semi_join_query_string += "FROM " + remote_table->name +
+  semi_join_query_string += " FROM " + remote_table->name +
                             " JOIN " + stationary_table->interim_name +
                             " ON " + stationary_table->interim_name + "." + stationary_join_column +
                             " = " + remote_table->name + "." + remote_join_column;
@@ -80,7 +84,7 @@ static Distributed_query *make_one_sided_semi_join_distributed_query(L_Parser_in
   stages.push_back(stage2);
 
   // Construct distributed query object
-  Distributed_query *dq = new Distributed_query{generate_final_join_query_string(tables, where_clause), stages};
+  Distributed_query *dq = new Distributed_query{semi_join_generate_final_join_query_string(stationary_table, remote_table, where_clause), stages};
 
   delete remote_partitions;
 
@@ -104,7 +108,8 @@ static Distributed_query *make_recursive_semi_join_distributed_query(L_Parser_in
   //  - send query to every node in remote_partitions
   //  - this avoids the "multiple" query problem
   // TODO: brukt constants.h !!
-  std::string recursive_distributed_join_query_string = "/*distributed<join_strategy=semi,ignore_table_partitions=" + remote_table->name + ">*/";
+  std::string recursive_distributed_join_query_string = "/*distributed<join_strategy=semi," IGNORE_TABLE_PARTITIONS_FLAG "=";
+  recursive_distributed_join_query_string += remote_table->name + ">*/";
 
   recursive_distributed_join_query_string += generate_join_query_string(parser_info->tables, parser_info->where_clause, false);
 
@@ -133,11 +138,15 @@ static Distributed_query *make_recursive_semi_join_distributed_query(L_Parser_in
   // remember delete remote_partitions
 }
 
+static bool has_ignore_partitions_arg_for_table(L_Table table, L_parsed_comment_args parsed_args) {
+  return parsed_args.comment_args_lookup_table[IGNORE_TABLE_PARTITIONS_FLAG] == table.name;
+}
 
-static Distributed_query *make_semi_join_distributed_query(L_Parser_info *parser_info) {
+
+static Distributed_query *make_semi_join_distributed_query(L_Parser_info *parser_info, L_parsed_comment_args parsed_args) {
 
   // -----------------------------------------------------
-  std::vector<L_Table> tables = parser_info->tables;
+  std::vector<L_Table> *tables = &(parser_info->tables);
   std::string where_clause = parser_info->where_clause;
   // ------------------------------------------------------
 
@@ -149,7 +158,7 @@ static Distributed_query *make_semi_join_distributed_query(L_Parser_info *parser
   bool has_stationary_table = false;
   unsigned int biggest_partition_count = 0;
 
-  for (auto &table : tables) {
+  for (auto &table : *tables) {
 
     std::vector<Partition> *partitions =
         get_partitions_by_table_name(table.name);
@@ -159,7 +168,7 @@ static Distributed_query *make_semi_join_distributed_query(L_Parser_info *parser
     }
 
     // Choose table with one partition, or ignore flag
-    if (!has_stationary_table && (partitions->size() == 1 /* || ignore_table_partitions(table)*/)) {
+    if (!has_stationary_table && (partitions->size() == 1 || has_ignore_partitions_arg_for_table(table, parsed_args))) {
       has_stationary_table = true;
       stationary_table = &table;
       delete partitions;
@@ -184,6 +193,51 @@ static Distributed_query *make_semi_join_distributed_query(L_Parser_info *parser
     // n=2
     return make_recursive_semi_join_distributed_query(parser_info, remote_table, remote_partitions);
   }
+}
+
+// MAJOR HACK ALERT
+
+static std::string semi_join_generate_final_join_query_string(L_Table *stationary_table, L_Table *remote_table, std::string join_on) {
+
+  L_Table stat_table = *stationary_table;
+  L_Table rem_table = *remote_table;
+
+  std::string final_query_string = "SELECT ";
+
+  // join_on.replace(join_on.find(stat_table.name), stat_table.name.length(), stat_table.name);
+
+  std::vector<std::string>::iterator p = stat_table.projections.begin();
+
+  // ALIAS? for like kolonnenavn? trengs det?
+  while (p != stat_table.projections.end()) {
+    // final_query_string  += ", " + (interim ? table.interim_name : table.name) + "." + *p + " as "
+    // + table.name + "." + *p;
+    final_query_string += stat_table.name + "." + *p;
+    ++p;
+    if (p != stat_table.projections.end()) final_query_string += ", ";
+  }
+
+  final_query_string += ", ";
+
+
+  join_on.replace(join_on.find(rem_table.name), rem_table.name.length(), rem_table.interim_name);
+
+  p = rem_table.projections.begin();
+
+  // ALIAS? for like kolonnenavn? trengs det?
+  while (p != rem_table.projections.end()) {
+    // final_query_string  += ", " + (interim ? table.interim_name : table.name) + "." + *p + " as "
+    // + table.name + "." + *p;
+    final_query_string += rem_table.interim_name + "." + *p;
+    ++p;
+    if (p != rem_table.projections.end()) final_query_string += ", ";
+  }
+
+  final_query_string += " FROM " + stat_table.name + " JOIN " +
+                        rem_table.interim_name + " ON " + join_on;
+
+
+  return final_query_string;
 }
 
 #endif  // LUNDGREN_SEMI_JOIN

@@ -176,6 +176,7 @@ INSERT INTO lundgren_shard_key VALUES (3, "mass", 0, 165);
 INSERT INTO lundgren_partition VALUES (1, 2, 2, "Person");
 INSERT INTO lundgren_partition VALUES (2, 2, 3, "Planet");
 INSERT INTO lundgren_partition VALUES (3, 2, 3, "Planet");
+INSERT INTO lundgren_partition VALUES (4, 2, 2, "Person");
 #INSERT INTO lundgren_partition VALUES (1, 1, 1, "Person");
 #INSERT INTO lundgren_partition VALUES (3, 3, 3, "Planet");
 
@@ -190,7 +191,8 @@ INSTALL PLUGIN lundgren SONAME 'lundgren.so';
 
 #SELECT AVG(height) FROM Person;
 
-/*distributed<join_strategy=semi,ignore_partitions_of_table=Person>*/select Person.name, Planet.name from Person join Planet on Person.homeworld = Planet.id;
+#/*distributed<join_strategy=semi,ignore_table_partitions=Person>*/select Person.name, Planet.name from Person join Planet on Person.homeworld = Planet.id;
+#/*distributed<join_strategy=semi,ignore_table_partitions=Person>*/select Person.name, Planet.name from Person join Planet on Person.homeworld = Planet.id;
 
 
 --sleep 99999999999
