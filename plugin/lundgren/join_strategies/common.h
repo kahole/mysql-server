@@ -4,11 +4,7 @@
 #ifndef LUNDGREN_COMMON
 #define LUNDGREN_COMMON
 
-static std::string generate_final_join_query_string(std::vector<L_Table> tables, std::string join_on) {
-
-  /*
-   * Generate final rewritten query
-   */
+static std::string generate_join_query_string(std::vector<L_Table> tables, std::string join_on, bool interim) {
 
   std::string final_query_string = "SELECT ";
 
@@ -19,15 +15,15 @@ static std::string generate_final_join_query_string(std::vector<L_Table> tables,
     // make final query join clause by replacing table names with interim
     // names in where_clause Warning! this only replaces the first occurence!
     join_on.replace(join_on.find(table.name), table.name.length(),
-                    table.interim_name);
+                    (interim ? table.interim_name : table.name));
 
     std::vector<std::string>::iterator p = table.projections.begin();
 
     // ALIAS? for like kolonnenavn? trengs det?
     while (p != table.projections.end()) {
-      // final_query_string  += ", " + table.interim_name + "." + *p + " as "
+      // final_query_string  += ", " + (interim ? table.interim_name : table.name) + "." + *p + " as "
       // + table.name + "." + *p;
-      final_query_string += table.interim_name + "." + *p;
+      final_query_string += (interim ? table.interim_name : table.name) + "." + *p;
       ++p;
       if (p != table.projections.end()) final_query_string += ", ";
     }
@@ -35,11 +31,16 @@ static std::string generate_final_join_query_string(std::vector<L_Table> tables,
     if (++it != tables.rend()) final_query_string += ", ";
   }
 
-  final_query_string += " FROM " + tables[1].interim_name + " JOIN " +
-                        tables[0].interim_name + " ON " + join_on;
+  final_query_string += " FROM " + (interim ? tables[1].interim_name : tables[1].name) + " JOIN " +
+                        (interim ? tables[0].interim_name : tables[0].name) + " ON " + join_on;
 
 
   return final_query_string;
 }
+
+static std::string generate_final_join_query_string(std::vector<L_Table> tables, std::string join_on) {
+  return generate_join_query_string(tables, join_on, true);
+}
+
 
 #endif  // LUNDGREN_COMMON

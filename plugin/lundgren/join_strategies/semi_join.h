@@ -90,7 +90,7 @@ static Distributed_query *make_one_sided_semi_join_distributed_query(L_Parser_in
 }
 
 // n > 1
-static Distributed_query *make_recursive_semi_join_distributed_query(L_Parser_info *parser_info MY_ATTRIBUTE((unused)), std::vector<Partition> *remote_partitions) {
+static Distributed_query *make_recursive_semi_join_distributed_query(L_Parser_info *parser_info MY_ATTRIBUTE((unused)), L_Table* remote_table, std::vector<Partition> *remote_partitions) {
 
   std::vector<Stage> stages;
 
@@ -104,7 +104,11 @@ static Distributed_query *make_recursive_semi_join_distributed_query(L_Parser_in
   // TODO: er vel egentlig bare å ta original-spørringen og modifisere flaggene!
   //   > eller byggge den opp på nytt
   //std::string recursive_distributed_join_query_string = PLUGIN_FLAG "SELECT ";// + stationary_join_column + " FROM " + stationary_table->name;
-  std::string recursive_distributed_join_query_string = "SELECT ";// + stationary_join_column + " FROM " + stationary_table->name;
+
+  // TODO: brukt constants.h !!
+  std::string recursive_distributed_join_query_string = "/*distributed<join_strategy=semi,ignore_table_partitions=" + remote_table->name + ">*/";
+
+  recursive_distributed_join_query_string += generate_join_query_string(parser_info->tables, parser_info->where_clause, false);
 
 
   std::vector<Node> target_nodes;
@@ -112,9 +116,8 @@ static Distributed_query *make_recursive_semi_join_distributed_query(L_Parser_in
   Interim_target interim_target = {join_union_interim_table_name , target_nodes};
 
   // TODO:
-  // for n=2
-  //  - choose ignore flag for table with the most partitions!
-  //  - send query to every node with a partition of the choosen table
+  //  - set ignore flag for the "remote_table"
+  //  - send query to every node in remote_partitions
   //  - this avoids the "multiple" query problem
 
   for (auto &p : *remote_partitions) {
@@ -152,6 +155,7 @@ static Distributed_query *make_semi_join_distributed_query(L_Parser_info *parser
   L_Table* remote_table;
   std::vector<Partition>* remote_partitions;
   bool has_stationary_table = false;
+  unsigned int biggest_partition_count = 0;
 
   for (auto &table : tables) {
 
@@ -169,11 +173,12 @@ static Distributed_query *make_semi_join_distributed_query(L_Parser_info *parser
       delete partitions;
     }
     else {
-      remote_partitions = partitions;
-      // Keep every remote partition
-      //remote_partitions->insert(remote_partitions->end(), partitions->begin(), partitions->end());
-      // Keep last encountered remote_table, i guess, this means we only support n=2.
-      remote_table = &table;
+      if (partitions->size() > biggest_partition_count || biggest_partition_count == 0) {
+        // Choose the most partitioned table, and its partitions
+        remote_partitions = partitions;
+        remote_table = &table;
+        biggest_partition_count = partitions->size();
+      }
     }
   }
 
@@ -184,8 +189,8 @@ static Distributed_query *make_semi_join_distributed_query(L_Parser_info *parser
     
   }
   else {
-    // n=2.. legge til støtte for n > 1?
-    return make_recursive_semi_join_distributed_query(parser_info, remote_partitions);
+    // n=2
+    return make_recursive_semi_join_distributed_query(parser_info, remote_table, remote_partitions);
   }
 }
 
