@@ -25,6 +25,11 @@ int catch_item(MYSQL_ITEM item, unsigned char *arg) {
     String s;
     item->print(&s, QT_ORDINARY);
 
+    // TODO:
+    //  - Item alias ligger på item->item_name
+    //  - Dersom alias sleng det ved ved siden av så putt det i datastrukturen
+    //  - Ta det med i final queries, i hvertfall semi_join n=2
+
     std::string item_sql = std::string(s.ptr());
     // hack
     item_sql.erase(std::remove(item_sql.begin(), item_sql.end(), '`'),
