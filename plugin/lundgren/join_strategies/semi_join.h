@@ -100,25 +100,17 @@ static Distributed_query *make_recursive_semi_join_distributed_query(L_Parser_in
 
   //Distributed Partition queries
 
-
-  // TODO: er vel egentlig bare å ta original-spørringen og modifisere flaggene!
-  //   > eller byggge den opp på nytt
-  //std::string recursive_distributed_join_query_string = PLUGIN_FLAG "SELECT ";// + stationary_join_column + " FROM " + stationary_table->name;
-
+  //  - sets ignore flag for the "remote_table"
+  //  - send query to every node in remote_partitions
+  //  - this avoids the "multiple" query problem
   // TODO: brukt constants.h !!
   std::string recursive_distributed_join_query_string = "/*distributed<join_strategy=semi,ignore_table_partitions=" + remote_table->name + ">*/";
 
   recursive_distributed_join_query_string += generate_join_query_string(parser_info->tables, parser_info->where_clause, false);
 
-
   std::vector<Node> target_nodes;
   target_nodes.push_back(Node(true));
   Interim_target interim_target = {join_union_interim_table_name , target_nodes};
-
-  // TODO:
-  //  - set ignore flag for the "remote_table"
-  //  - send query to every node in remote_partitions
-  //  - this avoids the "multiple" query problem
 
   for (auto &p : *remote_partitions) {
     Partition_query pq = {recursive_distributed_join_query_string, p.node, interim_target};
