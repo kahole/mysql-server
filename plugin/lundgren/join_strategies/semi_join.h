@@ -204,38 +204,34 @@ static std::string semi_join_generate_final_join_query_string(L_Table *stationar
 
   std::string final_query_string = "SELECT ";
 
-  // join_on.replace(join_on.find(stat_table.name), stat_table.name.length(), stat_table.name);
-
   std::vector<std::string>::iterator p = stat_table.projections.begin();
+  std::vector<std::string>::iterator a = stat_table.aliases.begin();
 
-  // ALIAS? for like kolonnenavn? trengs det?
   while (p != stat_table.projections.end()) {
-    // final_query_string  += ", " + (interim ? table.interim_name : table.name) + "." + *p + " as "
-    // + table.name + "." + *p;
     final_query_string += stat_table.name + "." + *p;
+    final_query_string += a->length() > 0 ? " as " + *a: "";
     ++p;
+    ++a;
     if (p != stat_table.projections.end()) final_query_string += ", ";
   }
 
   final_query_string += ", ";
 
-
   join_on.replace(join_on.find(rem_table.name), rem_table.name.length(), rem_table.interim_name);
 
   p = rem_table.projections.begin();
+  a = rem_table.aliases.begin();
 
-  // ALIAS? for like kolonnenavn? trengs det?
   while (p != rem_table.projections.end()) {
-    // final_query_string  += ", " + (interim ? table.interim_name : table.name) + "." + *p + " as "
-    // + table.name + "." + *p;
     final_query_string += rem_table.interim_name + "." + *p;
+    final_query_string += a->length() > 0 ? " as " + *a: "";
     ++p;
+    ++a;
     if (p != rem_table.projections.end()) final_query_string += ", ";
   }
 
   final_query_string += " FROM " + stat_table.name + " JOIN " +
                         rem_table.interim_name + " ON " + join_on;
-
 
   return final_query_string;
 }
