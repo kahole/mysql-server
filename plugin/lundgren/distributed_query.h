@@ -12,6 +12,7 @@ struct L_Table {
   std::string interim_name;
   std::vector<std::string> projections;
   std::vector<std::string> where_transitive_projections;
+  std::vector<std::string> aliases;
 };
 
 
