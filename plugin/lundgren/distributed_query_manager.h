@@ -4,6 +4,7 @@
 #include "plugin/lundgren/constants.h"
 #include "plugin/lundgren/internal_query/internal_query_session.h"
 #include "plugin/lundgren/distributed_query.h"
+#include <semaphore.h>
 
 #ifndef LUNDGREN_DQM
 #define LUNDGREN_DQM
@@ -62,16 +63,47 @@ std::string generate_result_string(mysqlx::SqlResult *res) {
   return result_string;
 }
 
-int connect_node(std::string node, std::string query,
-                 std::string *result, std::string *table_schema) {
+// int connect_node(std::string node, std::string query,
+//                  std::string *result, std::string *table_schema) {
+//   mysqlx::Session s(node);
+//   mysqlx::SqlResult res = s.sql(query).execute();
+
+//   *result = generate_result_string(&res);
+//   *table_schema = generate_table_schema(&res);
+
+//   s.close();
+
+//   return 0;
+// }
+
+int connect_node(std::string node, Partition_query *pq,
+                 std::string *result, std::string *table_schema, 
+                 sem_t *sem, bool *is_table_created) {
   mysqlx::Session s(node);
-  mysqlx::SqlResult res = s.sql(query).execute();
+  mysqlx::SqlResult res = s.sql(pq->sql_statement).execute();
 
   *result = generate_result_string(&res);
   *table_schema = generate_table_schema(&res);
 
-  s.close();
+  // s.close();
+  
+  // Internal_query_session session = Internal_query_session();
+  // session.execute_resultless_query("USE test");
 
+  std::string insert_query = "INSERT INTO " + pq->interim_target.interim_table_name + " VALUES " + (*result);
+  sem_wait(sem);
+  if (*is_table_created == false) {
+    std::string create_table_query = "CREATE TABLE " + pq->interim_target.interim_table_name + (*table_schema);
+    // s.sql(create_table_query).execute();
+    // session.execute_resultless_query(create_table_query.c_str());
+    *is_table_created = true;
+  }
+  sem_post(sem);
+  // session.execute_resultless_query(insert_query.c_str());
+  // s.sql(insert_query).execute();
+  // s.close();
+
+  // delete session;
   return 0;
 }
 
@@ -94,50 +126,30 @@ static void execute_distributed_query(Distributed_query* distributed_query) {
 
     const int num_thd = partition_queries.size();
     // //std::string nodes_metadata[] = {"127.0.0.1:12110", "127.0.0.1:13010"};
+    
+    std::map<std::string, sem_t> create_interim_table_sem;
+    std::map<std::string, bool> interim_table_is_created;
+    for (int i = 0; i < num_thd; i++) {
+      std::string interim_table = partition_queries[i].interim_target.interim_table_name;
+      create_interim_table_sem[interim_table];
+      sem_init(&create_interim_table_sem[interim_table], 0, 1);
+      interim_table_is_created[interim_table] = false;
+    }
+
 
     std::thread *nodes_connection = new std::thread[num_thd];
     std::string *results = new std::string[num_thd];
     std::string *table_schema = new std::string[num_thd];
 
-    for (int i = 0; i < num_thd; i++) {
-      Partition_query pq = partition_queries[i];
-
-      std::string node = generate_connection_string(pq);
-      std::string query = partition_queries[i].sql_statement;
-      nodes_connection[i] = std::thread(connect_node, node, query, &results[i], &table_schema[i]);
+    for (int i = 0; i < num_thd; i++) {     
+      std::string node = generate_connection_string(partition_queries[i]);
+      sem_t *sem = &create_interim_table_sem[partition_queries[i].interim_target.interim_table_name];
+      bool *is_created = &interim_table_is_created[partition_queries[i].interim_target.interim_table_name];
+      nodes_connection[i] = std::thread(connect_node, node, &(partition_queries[i]), &results[i], &table_schema[i], sem, is_created);
     }
 
     for (int i = 0; i < num_thd; i++) {
       nodes_connection[i].join();
-    }
-
-    /* Generate INSERT strings for every interim table */
-    std::map<std::string, std::string> insert_queries;
-    for (int i = 0; i < num_thd; i++) {
-      insert_queries[partition_queries[i].interim_target.interim_table_name] += results[i] + ',';
-    }
-
-    /* Add INSERT INTO interim VALUES in front of the string and removing trailing comma */
-    for (auto& query : insert_queries) {
-      query.second.pop_back();
-      insert_queries[query.first] = "INSERT INTO " + query.first + " VALUES " + query.second;
-    }
-
-    /* Generate CREATE TABLE for table schemas for each interim */
-    std::map<std::string, std::string> create_table_schemas;
-    for (int i = 0; i < num_thd; i++) {
-      std::string interim_table = partition_queries[i].interim_target.interim_table_name;
-      create_table_schemas[interim_table] = "CREATE TABLE " + interim_table + table_schema[i];
-    }
-
-    // TODO:
-    // if "node.is_self" use internal query stuff, because we dont have the credentials to do CPP-con for it
-
-    /* Perform internal queries to create and populate interim tables */
-    session->execute_resultless_query("USE test");
-    for (const auto& create_table : create_table_schemas) {
-      session->execute_resultless_query(create_table.second.c_str());;
-      session->execute_resultless_query(insert_queries[create_table.first].c_str());
     }
   }
   
