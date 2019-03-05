@@ -9,6 +9,8 @@
 #ifndef LUNDGREN_DQM
 #define LUNDGREN_DQM
 
+std::string generate_connection_string(Node node);
+
 std::string get_column_length(unsigned long length) {
   return std::to_string(length/4);
 }
@@ -85,35 +87,32 @@ int connect_node(std::string node, Partition_query *pq,
   *result = generate_result_string(&res);
   *table_schema = generate_table_schema(&res);
 
-  // s.close();
-  
-  // Internal_query_session session = Internal_query_session();
-  // session.execute_resultless_query("USE test");
+  s.close();
 
-  std::string insert_query = "INSERT INTO " + pq->interim_target.interim_table_name + " VALUES " + (*result);
-  sem_wait(sem);
-  if (*is_table_created == false) {
-    std::string create_table_query = "CREATE TABLE " + pq->interim_target.interim_table_name + (*table_schema);
-    // s.sql(create_table_query).execute();
-    // session.execute_resultless_query(create_table_query.c_str());
-    *is_table_created = true;
+  for (auto n : pq->interim_target.nodes) {
+    mysqlx::Session interim_session(generate_connection_string(n));
+
+    std::string insert_query = "INSERT INTO " + pq->interim_target.interim_table_name + " VALUES " + (*result);
+    sem_wait(sem);
+    if (*is_table_created == false) {
+      std::string create_table_query = "CREATE TABLE " + pq->interim_target.interim_table_name + (*table_schema);
+      interim_session.sql(create_table_query).execute();
+      *is_table_created = true;
+    }
+    sem_post(sem);
+    interim_session.sql(insert_query).execute();
+    interim_session.close();
   }
-  sem_post(sem);
-  // session.execute_resultless_query(insert_query.c_str());
-  // s.sql(insert_query).execute();
-  // s.close();
-
-  // delete session;
   return 0;
 }
 
-std::string generate_connection_string(Partition_query pq) {
+std::string generate_connection_string(Node node) {
   return (std::string("mysqlx://")
-    + pq.node.user + "@"
-    + pq.node.host
+    + node.user + "@"
+    + node.host
     + ":"
-    + std::to_string(pq.node.port)
-    + "/" + pq.node.database); 
+    + std::to_string(node.port)
+    + "/" + node.database); 
 }
 
 static void execute_distributed_query(Distributed_query* distributed_query) {
@@ -142,7 +141,7 @@ static void execute_distributed_query(Distributed_query* distributed_query) {
     std::string *table_schema = new std::string[num_thd];
 
     for (int i = 0; i < num_thd; i++) {     
-      std::string node = generate_connection_string(partition_queries[i]);
+      std::string node = generate_connection_string(partition_queries[i].node);
       sem_t *sem = &create_interim_table_sem[partition_queries[i].interim_target.interim_table_name];
       bool *is_created = &interim_table_is_created[partition_queries[i].interim_target.interim_table_name];
       nodes_connection[i] = std::thread(connect_node, node, &(partition_queries[i]), &results[i], &table_schema[i], sem, is_created);
