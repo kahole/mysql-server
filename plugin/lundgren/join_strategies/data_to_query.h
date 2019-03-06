@@ -47,7 +47,7 @@ static Distributed_query *make_data_to_query_distributed_query(L_Parser_info *pa
     }
 
     std::string from_table = " FROM " + std::string(table.name);
-    table.interim_name = random_string(30);
+    table.interim_name = generate_interim_name();
 
     partition_query_string += from_table;
 
