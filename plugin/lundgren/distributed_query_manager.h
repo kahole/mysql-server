@@ -1,7 +1,6 @@
 #include <mysqlx/xdevapi.h>
 #include <string.h>
 #include <thread>
-#include "plugin/lundgren/constants.h"
 #include "plugin/lundgren/internal_query/internal_query_session.h"
 #include "plugin/lundgren/distributed_query.h"
 #include <semaphore.h>
@@ -9,7 +8,12 @@
 #ifndef LUNDGREN_DQM
 #define LUNDGREN_DQM
 
+std::string get_column_length(unsigned long length);
+std::string generate_table_schema(mysqlx::SqlResult *res);
+std::string generate_result_string(mysqlx::SqlResult *res);
+int connect_node(std::string node, Partition_query *pq, sem_t *sem, bool *is_table_created);
 std::string generate_connection_string(Node node);
+void execute_distributed_query(Distributed_query* distributed_query);
 
 std::string get_column_length(unsigned long length) {
   return std::to_string(length/4);
@@ -81,7 +85,7 @@ int connect_node(std::string node, Partition_query *pq,
     std::string insert_query = "INSERT INTO " + pq->interim_target.interim_table_name + " VALUES " + result;
     sem_wait(sem);
     if (*is_table_created == false) {
-      std::string create_table_query = "CREATE TABLE " + pq->interim_target.interim_table_name + table_schema;
+      std::string create_table_query = "CREATE TABLE " + pq->interim_target.interim_table_name + ' ' + table_schema;
       interim_session.sql(create_table_query).execute();
       *is_table_created = true;
     }
@@ -101,7 +105,7 @@ std::string generate_connection_string(Node node) {
     + "/" + node.database); 
 }
 
-static void execute_distributed_query(Distributed_query* distributed_query) {
+void execute_distributed_query(Distributed_query* distributed_query) {
 
   for (auto &stage : distributed_query->stages) {
 
