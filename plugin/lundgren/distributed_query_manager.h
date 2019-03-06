@@ -65,37 +65,23 @@ std::string generate_result_string(mysqlx::SqlResult *res) {
   return result_string;
 }
 
-// int connect_node(std::string node, std::string query,
-//                  std::string *result, std::string *table_schema) {
-//   mysqlx::Session s(node);
-//   mysqlx::SqlResult res = s.sql(query).execute();
-
-//   *result = generate_result_string(&res);
-//   *table_schema = generate_table_schema(&res);
-
-//   s.close();
-
-//   return 0;
-// }
-
 int connect_node(std::string node, Partition_query *pq,
-                 std::string *result, std::string *table_schema, 
                  sem_t *sem, bool *is_table_created) {
   mysqlx::Session s(node);
   mysqlx::SqlResult res = s.sql(pq->sql_statement).execute();
 
-  *result = generate_result_string(&res);
-  *table_schema = generate_table_schema(&res);
+  std::string result = generate_result_string(&res);
+  std::string table_schema = generate_table_schema(&res);
 
   s.close();
 
   for (auto n : pq->interim_target.nodes) {
     mysqlx::Session interim_session(generate_connection_string(n));
 
-    std::string insert_query = "INSERT INTO " + pq->interim_target.interim_table_name + " VALUES " + (*result);
+    std::string insert_query = "INSERT INTO " + pq->interim_target.interim_table_name + " VALUES " + result;
     sem_wait(sem);
     if (*is_table_created == false) {
-      std::string create_table_query = "CREATE TABLE " + pq->interim_target.interim_table_name + (*table_schema);
+      std::string create_table_query = "CREATE TABLE " + pq->interim_target.interim_table_name + table_schema;
       interim_session.sql(create_table_query).execute();
       *is_table_created = true;
     }
@@ -117,14 +103,10 @@ std::string generate_connection_string(Node node) {
 
 static void execute_distributed_query(Distributed_query* distributed_query) {
 
-  Internal_query_session *session = new Internal_query_session();
-
   for (auto &stage : distributed_query->stages) {
 
     std::vector<Partition_query> partition_queries = stage.partition_queries;
-
     const int num_thd = partition_queries.size();
-    // //std::string nodes_metadata[] = {"127.0.0.1:12110", "127.0.0.1:13010"};
     
     std::map<std::string, sem_t> create_interim_table_sem;
     std::map<std::string, bool> interim_table_is_created;
@@ -135,26 +117,19 @@ static void execute_distributed_query(Distributed_query* distributed_query) {
       interim_table_is_created[interim_table] = false;
     }
 
-
     std::thread *nodes_connection = new std::thread[num_thd];
-    std::string *results = new std::string[num_thd];
-    std::string *table_schema = new std::string[num_thd];
-
     for (int i = 0; i < num_thd; i++) {     
       std::string node = generate_connection_string(partition_queries[i].node);
       sem_t *sem = &create_interim_table_sem[partition_queries[i].interim_target.interim_table_name];
       bool *is_created = &interim_table_is_created[partition_queries[i].interim_target.interim_table_name];
-      nodes_connection[i] = std::thread(connect_node, node, &(partition_queries[i]), &results[i], &table_schema[i], sem, is_created);
+      nodes_connection[i] = std::thread(connect_node, node, &(partition_queries[i]), sem, is_created);
     }
 
     for (int i = 0; i < num_thd; i++) {
       nodes_connection[i].join();
     }
+    delete [] nodes_connection;
   }
-  
-  delete session;
-  //delete nodes_connection;
-  //delete results;
 }
 
 #endif  // LUNDGREN_DQM
