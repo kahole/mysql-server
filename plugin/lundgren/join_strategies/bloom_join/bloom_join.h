@@ -108,7 +108,7 @@ static Distributed_query *make_recursive_bloom_join_distributed_query(L_Parser_i
   //  - send query to every node in remote_partitions
   //  - this avoids the "multiple" query problem
   // TODO: brukt constants.h !!
-  std::string recursive_distributed_join_query_string = "/*distributed<join_strategy=semi," IGNORE_TABLE_PARTITIONS_FLAG "=";
+  std::string recursive_distributed_join_query_string = "/*distributed<join_strategy=bloom," IGNORE_TABLE_PARTITIONS_FLAG "=";
   recursive_distributed_join_query_string += remote_table->name + ">*/";
 
   recursive_distributed_join_query_string += generate_join_query_string(parser_info->tables, parser_info->where_clause, false);
@@ -183,7 +183,6 @@ static Distributed_query *make_bloom_join_distributed_query(L_Parser_info *parse
     }
   }
 
-  /* static Distributed_query *make_one_sided_bloom_join_distributed_query(L_Parser_info *parser_info, L_Table* stationary_table, L_Table* remote_table, std::vector<Partition>* remote_partitions) { */
   if (has_stationary_table) {
     // n=1
     return make_one_sided_bloom_join_distributed_query(parser_info, stationary_table, remote_table, remote_partitions);
