@@ -171,8 +171,6 @@ protected:
 
 public:
 
-   std::vector<unsigned char> bit_table_;
-
    bloom_filter()
    : salt_count_(0),
      table_size_(0),
@@ -610,7 +608,7 @@ protected:
    }
 
    std::vector<bloom_type>    salt_;
-   //std::vector<unsigned char> bit_table_;
+   std::vector<unsigned char> bit_table_;
    unsigned int               salt_count_;
    unsigned long long int     table_size_;
    unsigned long long int     projected_element_count_;
