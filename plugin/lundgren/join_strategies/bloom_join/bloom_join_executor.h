@@ -1,9 +1,12 @@
 
 #include "plugin/lundgren/join_strategies/bloom_join/bloom_filter.h"
+#include "include/base64.h"
 
 #ifndef LUNDGREN_BLOOM_EXECUTOR
 #define LUNDGREN_BLOOM_EXECUTOR
 
+std::string encode_bit_table(std::vector<unsigned char> bit_table);
+std::vector<unsigned char> decode_bit_table(std::string base64);
 
 
 std::string generate_bloom_filter_string_from_query(std::string query) {
@@ -23,7 +26,7 @@ std::string generate_bloom_filter_string_from_query(std::string query) {
    if (!parameters)
    {
       std::cout << "Error - Invalid set of bloom filter parameters!" << std::endl;
-      return 1;
+      return query;
    }
 
    parameters.compute_optimal_parameters();
@@ -40,9 +43,46 @@ std::string generate_bloom_filter_string_from_query(std::string query) {
       }
    }
 
+    std::vector<unsigned char> bit_table_ = filter.bit_table_;
+    
+    std::string res = encode_bit_table(bit_table_);
+
+    // Reverse
+
+    bit_table_ = decode_bit_table(res);
+
+    return query + res;
+}
 
 
-    return NULL;
+std::string encode_bit_table(std::vector<unsigned char> bit_table) {
+    unsigned char* bit_array = bit_table.data();
+
+    uint64 size_of_bit_array = sizeof(unsigned char) * bit_table.size();
+    uint64 needed_length = base64_needed_encoded_length(size_of_bit_array);
+
+    char *base64_dst = new char[needed_length];
+
+    base64_encode(bit_array, size_of_bit_array, base64_dst);
+
+    std::string res(base64_dst, needed_length);
+
+    delete base64_dst;
+    return res;
+}
+
+std::vector<unsigned char> decode_bit_table(std::string base64) {
+
+    uint64 needed_length = base64_needed_decoded_length(base64.length());
+
+    unsigned char* bit_array = new unsigned char[needed_length];
+
+    base64_decode(base64.c_str(), base64.length(), bit_array, NULL, MY_BASE64_DECODE_ALLOW_MULTIPLE_CHUNKS);
+
+    std::vector<unsigned char> bit_table(bit_array, bit_array + needed_length);
+
+    delete bit_array;
+    return bit_table;
 }
 
 

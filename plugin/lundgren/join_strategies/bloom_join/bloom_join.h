@@ -3,7 +3,9 @@
 #include "plugin/lundgren/helpers.h"
 #include "plugin/lundgren/partitions/partition.h"
 #include "plugin/lundgren/join_strategies/common.h"
+#include "plugin/lundgren/join_strategies/semi_join.h"
 #include "plugin/lundgren/constants.h"
+#include "plugin/lundgren/join_strategies/bloom_join/bloom_join_executor.h"
 
 #ifndef LUNDGREN_BLOOM_JOIN
 #define LUNDGREN_BLOOM_JOIN
@@ -12,21 +14,23 @@
 
 // Bloom join
 
-static std::string bloom_join_generate_final_join_query_string(L_Table *stationary_table, L_Table *remote_table, std::string join_on);
-
 // n = 1
 static Distributed_query *make_one_sided_bloom_join_distributed_query(L_Parser_info *parser_info MY_ATTRIBUTE((unused)), L_Table* stationary_table, L_Table* remote_table, std::vector<Partition>* remote_partitions) {
 
   //std::vector<L_Table> *tables = &(parser_info->tables);
   std::string where_clause = parser_info->where_clause;
 
-
   std::vector<Stage> stages;
 
   stationary_table->interim_name = generate_interim_name();
   remote_table->interim_name = generate_interim_name();
 
-  // STAGE 1
+
+
+  //blabla
+  generate_bloom_filter_string_from_query("");
+
+  // // STAGE 1
   Stage stage1;
 
   std::string stationary_join_column = stationary_table->where_transitive_projections[0];
@@ -84,7 +88,7 @@ static Distributed_query *make_one_sided_bloom_join_distributed_query(L_Parser_i
   stages.push_back(stage2);
 
   // Construct distributed query object
-  Distributed_query *dq = new Distributed_query{bloom_join_generate_final_join_query_string(stationary_table, remote_table, where_clause), stages};
+  Distributed_query *dq = new Distributed_query{semi_join_generate_final_join_query_string(stationary_table, remote_table, where_clause), stages};
 
   delete remote_partitions;
 
@@ -138,11 +142,6 @@ static Distributed_query *make_recursive_bloom_join_distributed_query(L_Parser_i
   // remember delete remote_partitions
 }
 
-static bool has_ignore_partitions_arg_for_table(L_Table table, L_parsed_comment_args parsed_args) {
-  return parsed_args.comment_args_lookup_table[IGNORE_TABLE_PARTITIONS_FLAG] == table.name;
-}
-
-
 static Distributed_query *make_bloom_join_distributed_query(L_Parser_info *parser_info, L_parsed_comment_args parsed_args) {
 
   // -----------------------------------------------------
@@ -192,47 +191,6 @@ static Distributed_query *make_bloom_join_distributed_query(L_Parser_info *parse
     // n=2
     return make_recursive_bloom_join_distributed_query(parser_info, remote_table, remote_partitions);
   }
-}
-
-// MAJOR HACK ALERT
-
-static std::string bloom_join_generate_final_join_query_string(L_Table *stationary_table, L_Table *remote_table, std::string join_on) {
-
-  L_Table stat_table = *stationary_table;
-  L_Table rem_table = *remote_table;
-
-  std::string final_query_string = "SELECT ";
-
-  std::vector<std::string>::iterator p = stat_table.projections.begin();
-  std::vector<std::string>::iterator a = stat_table.aliases.begin();
-
-  while (p != stat_table.projections.end()) {
-    final_query_string += stat_table.name + "." + *p;
-    final_query_string += a->length() > 0 ? " as " + *a: "";
-    ++p;
-    ++a;
-    if (p != stat_table.projections.end()) final_query_string += ", ";
-  }
-
-  final_query_string += ", ";
-
-  join_on.replace(join_on.find(rem_table.name), rem_table.name.length(), rem_table.interim_name);
-
-  p = rem_table.projections.begin();
-  a = rem_table.aliases.begin();
-
-  while (p != rem_table.projections.end()) {
-    final_query_string += rem_table.interim_name + "." + *p;
-    final_query_string += a->length() > 0 ? " as " + *a: "";
-    ++p;
-    ++a;
-    if (p != rem_table.projections.end()) final_query_string += ", ";
-  }
-
-  final_query_string += " FROM " + stat_table.name + " JOIN " +
-                        rem_table.interim_name + " ON " + join_on;
-
-  return final_query_string;
 }
 
 #endif  // LUNDGREN_BLOOM_JOIN

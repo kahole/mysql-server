@@ -608,13 +608,15 @@ protected:
    }
 
    std::vector<bloom_type>    salt_;
-   std::vector<unsigned char> bit_table_;
+   // std::vector<unsigned char> bit_table_;
    unsigned int               salt_count_;
    unsigned long long int     table_size_;
    unsigned long long int     projected_element_count_;
    unsigned long long int     inserted_element_count_;
    unsigned long long int     random_seed_;
    double                     desired_false_positive_probability_;
+public:
+   std::vector<unsigned char> bit_table_;
 };
 
 inline bloom_filter operator & (const bloom_filter& a, const bloom_filter& b)

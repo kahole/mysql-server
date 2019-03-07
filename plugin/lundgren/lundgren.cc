@@ -44,6 +44,7 @@
 #include "plugin/lundgren/query_acceptance.h"
 #include "plugin/lundgren/join_strategies/data_to_query.h"
 #include "plugin/lundgren/join_strategies/semi_join.h"
+#include "plugin/lundgren/join_strategies/bloom_join/bloom_join.h"
 #include "plugin/lundgren/helpers.h"
 
 /* instrument the memory allocation */
@@ -92,6 +93,9 @@ static int lundgren_start(MYSQL_THD thd, mysql_event_class_t event_class,
         switch(parsed_args.join_strategy) {
         case SEMI:
           distributed_query = make_semi_join_distributed_query(parser_info, parsed_args);
+          break;
+        case BLOOM:
+          distributed_query = make_bloom_join_distributed_query(parser_info, parsed_args);
           break;
         case DATA_TO_QUERY:
         default:
