@@ -191,8 +191,8 @@ INSTALL PLUGIN lundgren SONAME 'lundgren.so';
 
 #SELECT AVG(height) FROM Person;
 
-#/*distributed<join_strategy=semi>*/select Person.name, Planet.name from Person join Planet on Person.homeworld = Planet.id;
-#/*distributed<join_strategy=semi,ignore_table_partitions=Person>*/select Person.name, Planet.name from Person join Planet on Person.homeworld = Planet.id;
+#/*distributed<join_strategy=semi>*/select Person.name, Planet.name as p_name from Person join Planet on Person.homeworld = Planet.id;
+#/*distributed<join_strategy=semi,ignore_table_partitions=Person>*/select Person.name, Planet.name as p_name from Person join Planet on Person.homeworld = Planet.id;
 
 
 --sleep 99999999999
