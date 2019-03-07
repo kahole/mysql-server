@@ -18,7 +18,7 @@ std::string generate_interim_name() {
 
   boost::erase_all(uuid_string, "-");
 
-  return uuid_string;
+  return 'i' + uuid_string; // Must prefix with a letter as numbers are not allowed.
 }
 
 // Split string by delimiter: https://thispointer.com/how-to-split-a-string-in-c/
@@ -65,6 +65,7 @@ L_parsed_comment_args parse_query_comments(const char *query) {
     }
   }
   comment_parameters.erase(comment_parameters.begin() + i);
+
 
 
   delimiter = '=';
