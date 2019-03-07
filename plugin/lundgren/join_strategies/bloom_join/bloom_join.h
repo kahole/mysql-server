@@ -10,7 +10,7 @@
 #ifndef LUNDGREN_BLOOM_JOIN
 #define LUNDGREN_BLOOM_JOIN
 
-#define IGNORE_TABLE_PARTITIONS_FLAG "ignore_table_partitions"
+#define BLOOM_SLAVE_FLAG "bloom_slave"
 
 // Bloom join
 
@@ -25,35 +25,41 @@ static Distributed_query *make_one_sided_bloom_join_distributed_query(L_Parser_i
   stationary_table->interim_name = generate_interim_name();
   remote_table->interim_name = generate_interim_name();
 
-
-
-  //blabla
-  generate_bloom_filter_string_from_query("");
-
-  // // STAGE 1
-  Stage stage1;
-
   std::string stationary_join_column = stationary_table->where_transitive_projections[0];
   std::string remote_join_column = remote_table->where_transitive_projections[0];
 
-  std::string join_column_projection_query_string = "SELECT DISTINCT " + stationary_join_column + " FROM " + stationary_table->name;
 
-  std::vector<Node> target_nodes;
+  std::string join_column_projection_query = "SELECT " + stationary_join_column + " FROM " + stationary_table->name;
 
-  for (auto &p : *remote_partitions) {
-    target_nodes.push_back(p.node);
-  }
+  std::string bloom_filter_base64 = generate_bloom_filter_from_query(join_column_projection_query);
+
+  // // // STAGE 1
+  // Stage stage1;
+
+  // std::string join_column_projection_query_string = "SELECT DISTINCT " + stationary_join_column + " FROM " + stationary_table->name;
+
+  // std::vector<Node> target_nodes;
+
+  // for (auto &p : *remote_partitions) {
+  //   target_nodes.push_back(p.node);
+  // }
   
-  Interim_target interim_target = {stationary_table->interim_name, target_nodes};
-  Partition_query pq = {join_column_projection_query_string, Node(true), interim_target};
+  // Interim_target interim_target = {stationary_table->interim_name, target_nodes};
+  // Partition_query pq = {join_column_projection_query_string, Node(true), interim_target};
 
-  stage1.partition_queries.push_back(pq);
-  stages.push_back(stage1);
+  // stage1.partition_queries.push_back(pq);
+  // stages.push_back(stage1);
 
   // STAGE 2
   Stage stage2;
 
-  std::string bloom_join_query_string = "SELECT ";
+  std::string bloom_join_query_string = "/*distributed<join_strategy=bloom,";
+  
+  bloom_join_query_string += BLOOM_SLAVE_FLAG "=true,";
+  bloom_join_query_string += "interim_name=" + stationary_table->interim_name + ",";
+  bloom_join_query_string += "bloom_filter=" + bloom_filter_base64 + ">*/";
+
+  bloom_join_query_string += "SELECT ";
 
   std::vector<std::string>::iterator p = remote_table->projections.begin();
 
@@ -107,11 +113,6 @@ static Distributed_query *make_recursive_bloom_join_distributed_query(L_Parser_i
   std::string join_union_interim_table_name = generate_interim_name();
 
   //Distributed Partition queries
-
-  //  - sets ignore flag for the "remote_table"
-  //  - send query to every node in remote_partitions
-  //  - this avoids the "multiple" query problem
-  // TODO: brukt constants.h !!
   std::string recursive_distributed_join_query_string = "/*distributed<join_strategy=bloom," IGNORE_TABLE_PARTITIONS_FLAG "=";
   recursive_distributed_join_query_string += remote_table->name + ">*/";
 
@@ -142,54 +143,65 @@ static Distributed_query *make_recursive_bloom_join_distributed_query(L_Parser_i
   // remember delete remote_partitions
 }
 
+static bool is_bloom_slave(L_parsed_comment_args parsed_args) {
+  return parsed_args.comment_args_lookup_table[BLOOM_SLAVE_FLAG] == "true";
+}
+
+
 static Distributed_query *make_bloom_join_distributed_query(L_Parser_info *parser_info, L_parsed_comment_args parsed_args) {
 
-  // -----------------------------------------------------
-  std::vector<L_Table> *tables = &(parser_info->tables);
-  std::string where_clause = parser_info->where_clause;
-  // ------------------------------------------------------
+  if (!is_bloom_slave(parsed_args)) {
 
-  std::vector<Stage> stages;
+    // -----------------------------------------------------
+    std::vector<L_Table> *tables = &(parser_info->tables);
+    std::string where_clause = parser_info->where_clause;
+    // ------------------------------------------------------
 
-  L_Table* stationary_table;
-  L_Table* remote_table;
-  std::vector<Partition>* remote_partitions;
-  bool has_stationary_table = false;
-  unsigned int biggest_partition_count = 0;
+    std::vector<Stage> stages;
 
-  for (auto &table : *tables) {
+    L_Table* stationary_table;
+    L_Table* remote_table;
+    std::vector<Partition>* remote_partitions;
+    bool has_stationary_table = false;
+    unsigned int biggest_partition_count = 0;
 
-    std::vector<Partition> *partitions =
-        get_partitions_by_table_name(table.name);
+    for (auto &table : *tables) {
 
-    if (partitions == NULL) {
-      return NULL;
-    }
+      std::vector<Partition> *partitions =
+          get_partitions_by_table_name(table.name);
 
-    // Choose table with one partition, or ignore flag
-    if (!has_stationary_table && (partitions->size() == 1 || has_ignore_partitions_arg_for_table(table, parsed_args))) {
-      has_stationary_table = true;
-      stationary_table = &table;
-      delete partitions;
-    }
-    else {
-      if (partitions->size() > biggest_partition_count || biggest_partition_count == 0) {
-        // Choose the most partitioned table, and its partitions
-        remote_partitions = partitions;
-        remote_table = &table;
-        biggest_partition_count = partitions->size();
+      if (partitions == NULL) {
+        return NULL;
+      }
+
+      // Choose table with one partition, or ignore flag
+      if (!has_stationary_table && (partitions->size() == 1 || has_ignore_partitions_arg_for_table(table, parsed_args))) {
+        has_stationary_table = true;
+        stationary_table = &table;
+        delete partitions;
+      }
+      else {
+        if (partitions->size() > biggest_partition_count || biggest_partition_count == 0) {
+          // Choose the most partitioned table, and its partitions
+          remote_partitions = partitions;
+          remote_table = &table;
+          biggest_partition_count = partitions->size();
+        }
       }
     }
-  }
 
-  if (has_stationary_table) {
-    // n=1
-    return make_one_sided_bloom_join_distributed_query(parser_info, stationary_table, remote_table, remote_partitions);
-    
+    if (has_stationary_table) {
+      // n=1
+      return make_one_sided_bloom_join_distributed_query(parser_info, stationary_table, remote_table, remote_partitions);
+      
+    }
+    else {
+      // n=2
+      return make_recursive_bloom_join_distributed_query(parser_info, remote_table, remote_partitions);
+    }
   }
   else {
-    // n=2
-    return make_recursive_bloom_join_distributed_query(parser_info, remote_table, remote_partitions);
+    return NULL;
   }
 }
 

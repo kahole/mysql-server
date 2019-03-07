@@ -1,4 +1,5 @@
 
+#include "plugin/lundgren/distributed_query_manager.h"
 #include "plugin/lundgren/join_strategies/bloom_join/bloom_filter.h"
 #include "include/base64.h"
 
@@ -9,49 +10,56 @@ std::string encode_bit_table(std::vector<unsigned char> bit_table);
 std::vector<unsigned char> decode_bit_table(std::string base64);
 
 
-std::string generate_bloom_filter_string_from_query(std::string query) {
+std::string generate_bloom_filter_from_query(std::string query) {
 
 
-   bloom_parameters parameters;
+    std::string con_string = generate_connection_string(Node(true));
 
-   // How many elements roughly do we expect to insert?
-   parameters.projected_element_count = 1000;
+    con_string.length();
 
-   // Maximum tolerable false positive probability? (0,1)
-   parameters.false_positive_probability = 0.0001; // 1 in 10000
+    mysqlx::Session s(con_string);
+    mysqlx::SqlResult res = s.sql(query).execute();
 
-   // Simple randomizer (optional)
-   parameters.random_seed = 0xA5A5A5A5;
+    uint64 row_count = res.count();
 
-   if (!parameters)
-   {
-      std::cout << "Error - Invalid set of bloom filter parameters!" << std::endl;
-      return query;
-   }
 
-   parameters.compute_optimal_parameters();
+    bloom_parameters parameters;
+    // How many elements roughly do we expect to insert?
+    parameters.projected_element_count = row_count;
+    // Maximum tolerable false positive probability? (0,1)
+    parameters.false_positive_probability = 0.0001; // 1 in 10000
+    // Simple randomizer (optional)
+    parameters.random_seed = 0xA5A5A5A5;
 
-   //Instantiate Bloom Filter
-   bloom_filter filter(parameters);
+    if (!parameters) {
+        std::cout << "Error - Invalid set of bloom filter parameters!" << std::endl;
+        return "";
+    }
 
-   // Insert into Bloom Filter
-   {
-      // Insert some numbers
-      for (std::size_t i = 0; i < 100; ++i)
-      {
-         filter.insert(i);
-      }
-   }
+    parameters.compute_optimal_parameters();
+
+    //Instantiate Bloom Filter
+    bloom_filter filter(parameters);
+
+    // Insert into Bloom Filter
+    {
+        mysqlx::Row row;
+        while ((row = res.fetchOne())) {
+            // TODO: trenger en spesifikk type? eller går det fint?
+            filter.insert(row[0]);
+        }
+    }
+    s.close();
 
     std::vector<unsigned char> bit_table_ = filter.bit_table_;
-    
-    std::string res = encode_bit_table(bit_table_);
+
+    std::string ress = encode_bit_table(bit_table_);
 
     // Reverse
 
-    bit_table_ = decode_bit_table(res);
+    bit_table_ = decode_bit_table(ress);
 
-    return query + res;
+    return ress;
 }
 
 
