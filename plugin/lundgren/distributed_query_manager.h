@@ -52,9 +52,9 @@ std::string generate_result_string(mysqlx::SqlResult *res) {
         case mysqlx::Type::INT : 
           result_string += std::to_string(int(row[i])); break;
         case mysqlx::Type::DECIMAL :
-          result_string += std::to_string(double(row[i]));; break;
+          result_string += std::to_string(double(row[i])); break;
         case mysqlx::Type::DOUBLE : 
-          result_string += std::to_string(double(row[i]));; break;
+          result_string += std::to_string(double(row[i])); break;
         case mysqlx::Type::STRING : 
           result_string += std::string("\"") + std::string(row[i]) + std::string("\"") ; break;
         default: break;
@@ -83,7 +83,9 @@ int connect_node(std::string node, Partition_query *pq) {
     std::string insert_query = "INSERT INTO " + pq->interim_target.interim_table_name + " VALUES " + result;
     std::string create_table_query = "CREATE TABLE IF NOT EXISTS " + pq->interim_target.interim_table_name + ' ' + table_schema;
     interim_session.sql(create_table_query).execute();
-    interim_session.sql(insert_query).execute();
+    if (result.length() > 0) {
+      interim_session.sql(insert_query).execute();
+    }
     interim_session.close();
   }
   return 0;

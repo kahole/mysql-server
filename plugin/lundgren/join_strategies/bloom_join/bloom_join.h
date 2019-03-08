@@ -1,4 +1,5 @@
 #include <string.h>
+#include <tuple>
 #include "plugin/lundgren/distributed_query.h"
 #include "plugin/lundgren/helpers.h"
 #include "plugin/lundgren/partitions/partition.h"
@@ -6,11 +7,17 @@
 #include "plugin/lundgren/join_strategies/semi_join.h"
 #include "plugin/lundgren/constants.h"
 #include "plugin/lundgren/join_strategies/bloom_join/bloom_join_executor.h"
+#include "plugin/lundgren/join_strategies/bloom_join/bloom_slave.h"
 
 #ifndef LUNDGREN_BLOOM_JOIN
 #define LUNDGREN_BLOOM_JOIN
 
-#define BLOOM_SLAVE_FLAG "bloom_slave"
+
+static Distributed_query *make_one_sided_bloom_join_distributed_query(L_Parser_info *parser_info MY_ATTRIBUTE((unused)), L_Table* stationary_table, L_Table* remote_table, std::vector<Partition>* remote_partitions);
+static Distributed_query *make_recursive_bloom_join_distributed_query(L_Parser_info *parser_info MY_ATTRIBUTE((unused)), L_Table* remote_table, std::vector<Partition> *remote_partitions);
+static bool is_bloom_slave(L_parsed_comment_args parsed_args);
+static Distributed_query *make_bloom_join_distributed_query(L_Parser_info *parser_info, L_parsed_comment_args parsed_args);
+
 
 // Bloom join
 
@@ -22,7 +29,8 @@ static Distributed_query *make_one_sided_bloom_join_distributed_query(L_Parser_i
 
   std::vector<Stage> stages;
 
-  stationary_table->interim_name = generate_interim_name();
+
+  std::string filtered_remote_interim_name = generate_interim_name();
   remote_table->interim_name = generate_interim_name();
 
   std::string stationary_join_column = stationary_table->where_transitive_projections[0];
@@ -31,24 +39,11 @@ static Distributed_query *make_one_sided_bloom_join_distributed_query(L_Parser_i
 
   std::string join_column_projection_query = "SELECT " + stationary_join_column + " FROM " + stationary_table->name;
 
-  std::string bloom_filter_base64 = generate_bloom_filter_from_query(join_column_projection_query);
+  std::string bloom_filter_base64;
+  uint64 bf_inserted_count;
 
-  // // // STAGE 1
-  // Stage stage1;
+  std::tie(bloom_filter_base64, bf_inserted_count) = generate_bloom_filter_from_query(join_column_projection_query);
 
-  // std::string join_column_projection_query_string = "SELECT DISTINCT " + stationary_join_column + " FROM " + stationary_table->name;
-
-  // std::vector<Node> target_nodes;
-
-  // for (auto &p : *remote_partitions) {
-  //   target_nodes.push_back(p.node);
-  // }
-  
-  // Interim_target interim_target = {stationary_table->interim_name, target_nodes};
-  // Partition_query pq = {join_column_projection_query_string, Node(true), interim_target};
-
-  // stage1.partition_queries.push_back(pq);
-  // stages.push_back(stage1);
 
   // STAGE 2
   Stage stage2;
@@ -56,15 +51,18 @@ static Distributed_query *make_one_sided_bloom_join_distributed_query(L_Parser_i
   std::string bloom_join_query_string = "/*distributed<join_strategy=bloom,";
   
   bloom_join_query_string += BLOOM_SLAVE_FLAG "=true,";
-  bloom_join_query_string += "interim_name=" + stationary_table->interim_name + ",";
-  bloom_join_query_string += "bloom_filter=" + bloom_filter_base64 + ">*/";
+  bloom_join_query_string += BLOOM_FILTERED_INTERIM_NAME_FLAG "=" + filtered_remote_interim_name + ",";
+  bloom_join_query_string += BLOOM_FILTER_REMOTE_TABLE_FLAG "=" + remote_table->name + ",";
+  bloom_join_query_string += BLOOM_FILTER_REMOTE_JOIN_COLUMN_FLAG "=" + remote_join_column + ",";
+  bloom_join_query_string += BLOOM_FILTER_PARAMETER_COUNT_FLAG "=" + std::to_string(bf_inserted_count) + ",";
+  bloom_join_query_string += BLOOM_FILTER_FLAG "=" + bloom_filter_base64 + ">*/";
 
   bloom_join_query_string += "SELECT ";
 
   std::vector<std::string>::iterator p = remote_table->projections.begin();
 
   while (p != remote_table->projections.end()) {
-    bloom_join_query_string += remote_table->name + "." + *p;
+    bloom_join_query_string += filtered_remote_interim_name + "." + *p;
     ++p;
     if (p != remote_table->projections.end()) bloom_join_query_string += ", ";
   }
@@ -72,16 +70,16 @@ static Distributed_query *make_one_sided_bloom_join_distributed_query(L_Parser_i
     bloom_join_query_string += ", ";
   p = remote_table->where_transitive_projections.begin();
   while (p != remote_table->where_transitive_projections.end()) {
-    bloom_join_query_string += remote_table->name + "." + *p;
+    bloom_join_query_string += filtered_remote_interim_name + "." + *p;
     ++p;
     if (p != remote_table->where_transitive_projections.end())
       bloom_join_query_string += ", ";
   }
 
-  bloom_join_query_string += " FROM " + remote_table->name +
-                            " JOIN " + stationary_table->interim_name +
-                            " ON " + stationary_table->interim_name + "." + stationary_join_column +
-                            " = " + remote_table->name + "." + remote_join_column;
+  bloom_join_query_string += " FROM " + filtered_remote_interim_name;
+                            // " JOIN " + stationary_table->interim_name +
+                            // " ON " + stationary_table->interim_name + "." + stationary_join_column +
+                            // " = " + remote_table->name + "." + remote_join_column;
 
   std::vector<Node> stage2_target_nodes{Node(true)}; //vector of self-node
   Interim_target stage2_interim_target = {remote_table->interim_name, stage2_target_nodes};
@@ -201,7 +199,7 @@ static Distributed_query *make_bloom_join_distributed_query(L_Parser_info *parse
     }
   }
   else {
-    return NULL;
+    return bloom_slave_execute_strategy(parser_info, parsed_args);
   }
 }
 

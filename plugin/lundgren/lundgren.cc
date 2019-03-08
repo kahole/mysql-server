@@ -125,6 +125,8 @@ static int lundgren_start(MYSQL_THD thd, mysql_event_class_t event_class,
 
       mysql_parser_parse(thd, new_query, false, NULL, NULL);
 
+      delete distributed_query;
+
       *((int *)event_parse->flags) |=
           (int)MYSQL_AUDIT_PARSE_REWRITE_PLUGIN_QUERY_REWRITTEN;
     }
