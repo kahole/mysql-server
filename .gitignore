@@ -13,6 +13,7 @@ source_downloads
 extra/wolfssl-*
 
 bld
+bld2
 
 # Vim swap files
 [._]*.s[a-v][a-z]
