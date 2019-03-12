@@ -7,10 +7,10 @@
 #--------------------------------------------------------------------------------------------------------
 
 CREATE TABLE Planet (
-  id INT UNSIGNED PRIMARY KEY,
+  id INT PRIMARY KEY,
   name VARCHAR(30) NOT NULL,
-  diameter INT UNSIGNED,
-  population BIGINT UNSIGNED
+  diameter INT,
+  population BIGINT
 );
 
 INSERT INTO Planet (id, name, diameter, population) VALUES (1, "Alderaan", 12500, 2000000000);
@@ -75,15 +75,17 @@ INSERT INTO Planet (id, name, diameter, population) VALUES (59, "Umbara", 0, 0);
 INSERT INTO Planet (id, name, diameter, population) VALUES (60, "Tatooine", 10465, 200000);
 INSERT INTO Planet (id, name, diameter, population) VALUES (61, "Jakku", 0, 0);
 
+# WARNING SET ALL POPULATION TO 0 TO AVOID BIGINT BUG IN Con/C++
+UPDATE Planet SET population = 0;
 
 CREATE TABLE Person (
-  id INT UNSIGNED PRIMARY KEY,
+  id INT PRIMARY KEY,
   name VARCHAR(30) NOT NULL,
-  height INT UNSIGNED,
-  mass INT UNSIGNED,
+  height INT,
+  mass INT,
   hair_color VARCHAR(20),
   gender VARCHAR(20),
-  homeworld INT UNSIGNED,
+  homeworld INT,
   FOREIGN KEY (homeworld) REFERENCES Planet(id)
 );
 
@@ -175,8 +177,9 @@ INSERT INTO lundgren_shard_key VALUES (3, "mass", 0, 165);
 
 INSERT INTO lundgren_partition VALUES (1, 2, 2, "Person");
 INSERT INTO lundgren_partition VALUES (2, 2, 3, "Planet");
-INSERT INTO lundgren_partition VALUES (3, 2, 3, "Planet");
-INSERT INTO lundgren_partition VALUES (4, 2, 2, "Person");
+#INSERT INTO lundgren_partition VALUES (3, 2, 3, "Planet");
+#INSERT INTO lundgren_partition VALUES (4, 2, 2, "Person");
+
 #INSERT INTO lundgren_partition VALUES (1, 1, 1, "Person");
 #INSERT INTO lundgren_partition VALUES (3, 3, 3, "Planet");
 

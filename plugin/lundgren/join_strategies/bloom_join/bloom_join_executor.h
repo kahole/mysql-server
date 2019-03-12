@@ -27,7 +27,7 @@ std::tuple<std::string, uint64> generate_bloom_filter_from_query(std::string que
         mysqlx::Row row;
         while ((row = res.fetchOne())) {
             // TODO: trenger en spesifikk type? eller går det fint?
-            filter.insert(row[0]);
+            filter.insert(int(row[0]));
         }
     }
     s.close();

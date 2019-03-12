@@ -24,6 +24,11 @@ bloom_filter parse_bloom_filter(L_parsed_comment_args parsed_args) {
 
     bloom_filter bf(get_bloom_parameters(bf_inserted_count));
 
+    // Test:
+    // bf.insert(42);
+    // bit_table = bit_table;
+    // end test
+
     bf.bit_table_ = bit_table;
 
     return bf;
@@ -85,14 +90,32 @@ std::string generate_filtered_insert_statement(mysqlx::SqlResult *res, bloom_fil
 
   while ((row = res->fetchOne())) {
 
-    // if (!filter.contains(row[filter_column_index])) {
-        // continue;
-        filter_column_index = filter_column_index;
+    // switch ((*columns)[filter_column_index].getType()) {
+    //   case mysqlx::Type::INT : 
+    //     if (!filter.contains(int(row[filter_column_index])) continue;
+    //     break;
+    //   case mysqlx::Type::DECIMAL :
+    //     if (!filter.contains(double(row[filter_column_index])) continue;
+    //     break;
+    //   case mysqlx::Type::DOUBLE : 
+    //     if (!filter.contains(double(row[filter_column_index])) continue;
+    //     break;
+    //   case mysqlx::Type::STRING :
+    //     if (!filter.contains(std::string(row[filter_column_index]).c_str()) continue;
+    //     break;
+    //   default:
+    //   break;
     // }
+
+    if (!filter.contains(int(row[filter_column_index]))) {
+        continue;
+    }
 
     result_string += "(";
     for (uint i = 0; i < num_columns; i++) {
       switch ((*columns)[i].getType()) {
+        case mysqlx::Type::BIGINT : 
+          result_string += std::to_string(int64_t(row[i])); break;
         case mysqlx::Type::INT : 
           result_string += std::to_string(int(row[i])); break;
         case mysqlx::Type::DECIMAL :

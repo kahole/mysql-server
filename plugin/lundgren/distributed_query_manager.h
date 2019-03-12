@@ -24,6 +24,8 @@ std::string generate_table_schema(mysqlx::SqlResult *res) {
     return_string += res->getColumn(i).getColumnLabel();
     return_string += " ";
     switch (res->getColumn(i).getType()) {
+      case mysqlx::Type::BIGINT : 
+        return_string += (res->getColumn(i).isNumberSigned()) ? "BIGINT" : "BIGINT UNSIGNED"; break;
       case mysqlx::Type::INT : 
         return_string += (res->getColumn(i).isNumberSigned()) ? "INT" : "INT UNSIGNED"; break;
       case mysqlx::Type::DECIMAL : 
@@ -49,6 +51,8 @@ std::string generate_result_string(mysqlx::SqlResult *res) {
     result_string += "(";
     for (uint i = 0; i < num_columns; i++) {
       switch ((*columns)[i].getType()) {
+        case mysqlx::Type::BIGINT : 
+          result_string += std::to_string(int64_t(row[i])); break;
         case mysqlx::Type::INT : 
           result_string += std::to_string(int(row[i])); break;
         case mysqlx::Type::DECIMAL :
