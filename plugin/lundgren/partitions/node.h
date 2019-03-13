@@ -57,4 +57,6 @@ class SelfNode {
   }
 };
 
+SelfNode *SelfNode::instance = 0;
+
 #endif  // LUNDGREN_NODE
