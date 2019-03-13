@@ -81,7 +81,7 @@ static Distributed_query *make_one_sided_bloom_join_distributed_query(L_Parser_i
                             // " ON " + stationary_table->interim_name + "." + stationary_join_column +
                             // " = " + remote_table->name + "." + remote_join_column;
 
-  std::vector<Node> stage2_target_nodes{Node(true)}; //vector of self-node
+  std::vector<Node> stage2_target_nodes{SelfNode::getNode()}; //vector of self-node
   Interim_target stage2_interim_target = {remote_table->interim_name, stage2_target_nodes};
 
   for (auto &p : *remote_partitions) {
@@ -117,7 +117,7 @@ static Distributed_query *make_recursive_bloom_join_distributed_query(L_Parser_i
   recursive_distributed_join_query_string += generate_join_query_string(parser_info->tables, parser_info->where_clause, false);
 
   std::vector<Node> target_nodes;
-  target_nodes.push_back(Node(true));
+  target_nodes.push_back(SelfNode::getNode());
   Interim_target interim_target = {join_union_interim_table_name , target_nodes};
 
   for (auto &p : *remote_partitions) {

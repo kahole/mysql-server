@@ -57,8 +57,7 @@ static Distributed_query *make_data_to_query_distributed_query(L_Parser_info *pa
     for (std::vector<Partition>::iterator p = partitions->begin();
          p != partitions->end(); ++p) {
 
-      Node self(true);
-      std::vector<Node> target_nodes{self};
+      std::vector<Node> target_nodes{SelfNode::getNode()};
 
       Interim_target interim_target = {table.interim_name, target_nodes};
 
