@@ -49,7 +49,7 @@ class SelfNode {
         return Node(true);
       }
       // sett portnummer
-      uint port_number = (uint)result->getLong(6) + 10;
+      uint port_number = (uint)result->getLong(0) + 10;
 
       instance = new SelfNode(port_number);
     }
