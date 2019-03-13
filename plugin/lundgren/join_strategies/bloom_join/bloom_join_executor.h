@@ -17,6 +17,7 @@ std::tuple<std::string, uint64> generate_bloom_filter_from_query(std::string que
     mysqlx::Session s(con_string);
     mysqlx::SqlResult res = s.sql(query).execute();
 
+    const mysqlx::Columns *columns = &res.getColumns();
     uint64 row_count = res.count();
 
     //Instantiate Bloom Filter
@@ -26,8 +27,25 @@ std::tuple<std::string, uint64> generate_bloom_filter_from_query(std::string que
     {
         mysqlx::Row row;
         while ((row = res.fetchOne())) {
-            // TODO: trenger en spesifikk type? eller går det fint?
-            filter.insert(int(row[0]));
+
+            switch ((*columns)[0].getType()) {
+            case mysqlx::Type::INT : 
+                filter.insert(int(row[0]));
+                break;
+            case mysqlx::Type::DECIMAL :
+                filter.insert(double(row[0]));
+                break;
+            case mysqlx::Type::DOUBLE : 
+                filter.insert(double(row[0]));
+                break;
+            case mysqlx::Type::STRING :
+                filter.insert(std::string(row[0]).c_str());
+                break;
+            default:
+            break;
+            }
+
+            // filter.insert(int(row[0]));
         }
     }
     s.close();

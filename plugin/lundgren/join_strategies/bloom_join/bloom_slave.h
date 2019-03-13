@@ -90,26 +90,26 @@ std::string generate_filtered_insert_statement(mysqlx::SqlResult *res, bloom_fil
 
   while ((row = res->fetchOne())) {
 
-    // switch ((*columns)[filter_column_index].getType()) {
-    //   case mysqlx::Type::INT : 
-    //     if (!filter.contains(int(row[filter_column_index])) continue;
-    //     break;
-    //   case mysqlx::Type::DECIMAL :
-    //     if (!filter.contains(double(row[filter_column_index])) continue;
-    //     break;
-    //   case mysqlx::Type::DOUBLE : 
-    //     if (!filter.contains(double(row[filter_column_index])) continue;
-    //     break;
-    //   case mysqlx::Type::STRING :
-    //     if (!filter.contains(std::string(row[filter_column_index]).c_str()) continue;
-    //     break;
-    //   default:
-    //   break;
-    // }
-
-    if (!filter.contains(int(row[filter_column_index]))) {
-        continue;
+    switch ((*columns)[filter_column_index].getType()) {
+      case mysqlx::Type::INT : 
+        if (!filter.contains(int(row[filter_column_index]))) continue;
+        break;
+      case mysqlx::Type::DECIMAL :
+        if (!filter.contains(double(row[filter_column_index]))) continue;
+        break;
+      case mysqlx::Type::DOUBLE : 
+        if (!filter.contains(double(row[filter_column_index]))) continue;
+        break;
+      case mysqlx::Type::STRING :
+        if (!filter.contains(std::string(row[filter_column_index]).c_str())) continue;
+        break;
+      default:
+      break;
     }
+
+    // if (!filter.contains(int(row[filter_column_index]))) {
+    //     continue;
+    // }
 
     result_string += "(";
     for (uint i = 0; i < num_columns; i++) {
