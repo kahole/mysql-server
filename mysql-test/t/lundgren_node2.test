@@ -1,0 +1,155 @@
+--source suite/query_rewrite_plugins/include/have_plugin_lundgren.inc
+
+--replace_regex /\.dll/.so/
+
+
+#--------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------------
+
+CREATE TABLE Planet (
+  id INT PRIMARY KEY,
+  name VARCHAR(30) NOT NULL,
+  diameter INT,
+  population BIGINT
+);
+
+INSERT INTO Planet (id, name, diameter, population) VALUES (31, "Chandrila", 13500, 1200000000);
+INSERT INTO Planet (id, name, diameter, population) VALUES (32, "Sullust", 12780, 18500000000);
+INSERT INTO Planet (id, name, diameter, population) VALUES (33, "Toydaria", 7900, 11000000);
+INSERT INTO Planet (id, name, diameter, population) VALUES (34, "Malastare", 18880, 2000000000);
+INSERT INTO Planet (id, name, diameter, population) VALUES (35, "Dathomir", 10480, 5200);
+INSERT INTO Planet (id, name, diameter, population) VALUES (36, "Ryloth", 10600, 1500000000);
+INSERT INTO Planet (id, name, diameter, population) VALUES (37, "Aleen Minor", 0, 0);
+INSERT INTO Planet (id, name, diameter, population) VALUES (38, "Vulpter", 14900, 421000000);
+INSERT INTO Planet (id, name, diameter, population) VALUES (39, "Troiken", 0, 0);
+INSERT INTO Planet (id, name, diameter, population) VALUES (40, "Tund", 12190, 0);
+INSERT INTO Planet (id, name, diameter, population) VALUES (41, "Haruun Kal", 10120, 705300);
+INSERT INTO Planet (id, name, diameter, population) VALUES (42, "Cerea", 0, 450000000);
+INSERT INTO Planet (id, name, diameter, population) VALUES (43, "Glee Anselm", 15600, 500000000);
+INSERT INTO Planet (id, name, diameter, population) VALUES (44, "Iridonia", 0, 0);
+INSERT INTO Planet (id, name, diameter, population) VALUES (45, "Tholoth", 0, 0);
+INSERT INTO Planet (id, name, diameter, population) VALUES (46, "Iktotch", 0, 0);
+INSERT INTO Planet (id, name, diameter, population) VALUES (47, "Quermia", 0, 0);
+INSERT INTO Planet (id, name, diameter, population) VALUES (48, "Dorin", 13400, 0);
+INSERT INTO Planet (id, name, diameter, population) VALUES (49, "Champala", 0, 3500000000);
+INSERT INTO Planet (id, name, diameter, population) VALUES (50, "Mirial", 0, 0);
+INSERT INTO Planet (id, name, diameter, population) VALUES (51, "Serenno", 0, 0);
+INSERT INTO Planet (id, name, diameter, population) VALUES (52, "Concord Dawn", 0, 0);
+INSERT INTO Planet (id, name, diameter, population) VALUES (53, "Zolan", 0, 0);
+INSERT INTO Planet (id, name, diameter, population) VALUES (54, "Ojom", 0, 500000000);
+INSERT INTO Planet (id, name, diameter, population) VALUES (55, "Skako", 0, 500000000000);
+INSERT INTO Planet (id, name, diameter, population) VALUES (56, "Muunilinst", 13800, 5000000000);
+INSERT INTO Planet (id, name, diameter, population) VALUES (57, "Shili", 0, 0);
+INSERT INTO Planet (id, name, diameter, population) VALUES (58, "Kalee", 13850, 4000000000);
+INSERT INTO Planet (id, name, diameter, population) VALUES (59, "Umbara", 0, 0);
+INSERT INTO Planet (id, name, diameter, population) VALUES (60, "Tatooine", 10465, 200000);
+INSERT INTO Planet (id, name, diameter, population) VALUES (61, "Jakku", 0, 0);
+
+# WARNING SET ALL POPULATION TO 0 TO AVOID BIGINT BUG IN Con/C++
+UPDATE Planet SET population = 0;
+
+CREATE TABLE Person (
+  id INT PRIMARY KEY,
+  name VARCHAR(30) NOT NULL,
+  height INT,
+  mass INT,
+  hair_color VARCHAR(20),
+  gender VARCHAR(20),
+  homeworld INT
+);
+
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (44, "Ayla Secura", 178, 55, "none", "female", 37);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (45, "Dud Bolt", 94, 45, "none", "male", 39);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (46, "Gasgano", 122, 0, "none", "male", 40);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (47, "Ben Quadinaros", 163, 65, "none", "male", 41);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (48, "Mace Windu", 188, 84, "none", "male", 42);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (49, "Ki-Adi-Mundi", 198, 82, "white", "male", 43);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (50, "Kit Fisto", 196, 87, "none", "male", 44);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (51, "Eeth Koth", 171, 0, "black", "male", 45);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (52, "Adi Gallia", 184, 50, "none", "female", 9);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (53, "Saesee Tiin", 188, 0, "none", "male", 47);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (54, "Yarael Poof", 264, 0, "none", "male", 48);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (55, "Plo Koon", 188, 80, "none", "male", 49);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (56, "Mas Amedda", 196, 0, "none", "male", 50);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (57, "Gregar Typho", 185, 85, "black", "male", 8);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (58, "Cordé", 157, 0, "brown", "female", 8);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (59, "Cliegg Lars", 183, 0, "brown", "male", 1);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (60, "Poggle the Lesser", 183, 80, "none", "male", 11);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (61, "Luminara Unduli", 170, 56.2, "black", "female", 51);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (62, "Barriss Offee", 166, 50, "black", "female", 51);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (63, "Dormé", 165, 0, "brown", "female", 8);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (64, "Dooku", 193, 80, "white", "male", 52);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (65, "Bail Prestor Organa", 191, 0, "black", "male", 2);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (66, "Jango Fett", 183, 79, "black", "male", 53);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (67, "Zam Wesell", 168, 55, "blonde", "female", 54);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (68, "Dexter Jettster", 198, 102, "none", "male", 55);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (69, "Lama Su", 229, 88, "none", "male", 10);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (70, "Taun We", 213, 0, "none", "female", 10);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (71, "Jocasta Nu", 167, 0, "white", "female", 9);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (72, "Ratts Tyerell", 79, 15, "none", "male", 38);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (73, "R4-P17", 96, 0, "none", "female", 28);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (74, "Wat Tambor", 193, 48, "none", "male", 56);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (75, "San Hill", 191, 0, "none", "male", 57);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (76, "Shaak Ti", 178, 57, "none", "female", 58);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (77, "Grievous", 216, 159, "none", "male", 59);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (78, "Tarfful", 234, 136, "brown", "male", 14);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (79, "Raymus Antilles", 188, 79, "brown", "male", 2);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (80, "Sly Moore", 178, 48, "none", "female", 60);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (81, "Tion Medon", 206, 80, "none", "male", 12);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (82, "Finn", 0, 0, "black", "male", 28);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (83, "Rey", 0, 0, "brown", "female", 28);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (84, "Poe Dameron", 0, 0, "brown", "male", 28);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (85, "BB8", 0, 0, "none", "none", 28);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (86, "Captain Phasma", 0, 0, "unknown", "female", 28);
+INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (87, "Padmé Amidala", 165, 45, "brown", "female", 8);
+
+
+#--------------------------------------------------------------------------------------------------------
+# META DATA TABLES
+#--------------------------------------------------------------------------------------------------------
+
+CREATE TABLE lundgren_node (
+  id INT UNSIGNED PRIMARY KEY,
+  host_l VARCHAR(80) NOT NULL,
+  port_l INT UNSIGNED,
+  database_l VARCHAR(80) NOT NULL,
+  username_l VARCHAR(50),
+  password_l VARCHAR(50)
+);
+
+CREATE TABLE lundgren_shard_key (
+  id INT UNSIGNED PRIMARY KEY,
+  column_name VARCHAR(80) NOT NULL,
+  range_start INT UNSIGNED,
+  range_end INT UNSIGNED
+);
+
+CREATE TABLE lundgren_partition (
+  id INT UNSIGNED PRIMARY KEY,
+  nodeId INT UNSIGNED,
+  shardKeyId INT UNSIGNED,
+  table_name VARCHAR(80) NOT NULL,
+  FOREIGN KEY (nodeId) REFERENCES lundgren_node(id),
+  FOREIGN KEY (shardKeyId) REFERENCES lundgren_shard_key(id)
+);
+
+INSERT INTO lundgren_node VALUES (1, "127.0.0.1", 13010, "test", "root", NULL);
+INSERT INTO lundgren_node VALUES (2, "127.0.0.1", 12010, "test", "root", NULL);
+
+INSERT INTO lundgren_shard_key VALUES (2, "height", 165, 500);
+INSERT INTO lundgren_shard_key VALUES (3, "mass", 0, 165);
+
+INSERT INTO lundgren_partition VALUES (1, 1, 2, "Person");
+INSERT INTO lundgren_partition VALUES (2, 1, 3, "Planet");
+INSERT INTO lundgren_partition VALUES (3, 2, 2, "Person");
+INSERT INTO lundgren_partition VALUES (4, 2, 3, "Planet");
+
+#--------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------------
+
+INSTALL PLUGIN lundgren SONAME 'lundgren.so';
+
+
+--sleep 99999999999
+
+UNINSTALL PLUGIN lundgren;
