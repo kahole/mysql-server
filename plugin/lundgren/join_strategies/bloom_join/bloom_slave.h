@@ -48,7 +48,7 @@ Distributed_query *bloom_slave_execute_strategy(L_Parser_info *parser_info MY_AT
 
     std::string query_for_filtering = "SELECT * FROM " + remote_table_name;
 
-    std::string con_string = generate_connection_string(Node(true));
+    std::string con_string = generate_connection_string(SelfNode::getNode());
 
     mysqlx::Session s(con_string);
     mysqlx::SqlResult res = s.sql(query_for_filtering).execute();
