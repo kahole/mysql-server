@@ -12,7 +12,7 @@ std::tuple<std::string, uint64> generate_bloom_filter_from_query(std::string que
 std::tuple<std::string, uint64> generate_bloom_filter_from_query(std::string query) {
 
 
-    std::string con_string = generate_connection_string(Node(true));
+    std::string con_string = generate_connection_string(SelfNode::getNode());
 
     mysqlx::Session s(con_string);
     mysqlx::SqlResult res = s.sql(query).execute();
