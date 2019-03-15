@@ -34,8 +34,13 @@ std::vector<std::string> split(std::string strToSplit, char delimeter)
     return splittedStrings;
 }
 
-enum JOIN_STRATEGY {DATA_TO_QUERY, SEMI, BLOOM};
-const std::map<std::string, JOIN_STRATEGY> join_strategy_string_to_enum = {{"data_to_query", DATA_TO_QUERY}, {"semi", SEMI}, {"bloom", BLOOM}};
+enum JOIN_STRATEGY {DATA_TO_QUERY, SEMI, BLOOM, HASH_REDIST};
+const std::map<std::string, JOIN_STRATEGY> join_strategy_string_to_enum = {
+    {"data_to_query", DATA_TO_QUERY}, 
+    {"semi", SEMI}, 
+    {"bloom", BLOOM}, 
+    {"hash_redist", HASH_REDIST}
+  };
 
 struct L_parsed_comment_args {
   JOIN_STRATEGY join_strategy;
