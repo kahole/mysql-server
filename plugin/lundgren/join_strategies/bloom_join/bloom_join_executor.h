@@ -1,4 +1,6 @@
 #include <tuple>
+#include <mysqlx/xdevapi.h>
+#include "plugin/lundgren/partitions/node.h"
 #include "plugin/lundgren/distributed_query_manager.h"
 #include "plugin/lundgren/join_strategies/bloom_join/bloom_filter.h"
 #include "plugin/lundgren/join_strategies/bloom_join/bloom_filter_parameters.h"

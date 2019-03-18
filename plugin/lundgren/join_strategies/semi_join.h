@@ -51,22 +51,7 @@ static Distributed_query *make_one_sided_semi_join_distributed_query(L_Parser_in
 
   std::string semi_join_query_string = "SELECT ";
 
-  std::vector<std::string>::iterator p = remote_table->projections.begin();
-
-  while (p != remote_table->projections.end()) {
-    semi_join_query_string += remote_table->name + "." + *p;
-    ++p;
-    if (p != remote_table->projections.end()) semi_join_query_string += ", ";
-  }
-  if (remote_table->where_transitive_projections.size() > 0)
-    semi_join_query_string += ", ";
-  p = remote_table->where_transitive_projections.begin();
-  while (p != remote_table->where_transitive_projections.end()) {
-    semi_join_query_string += remote_table->name + "." + *p;
-    ++p;
-    if (p != remote_table->where_transitive_projections.end())
-      semi_join_query_string += ", ";
-  }
+  semi_join_query_string += generate_projections_string_for_partition_query(remote_table);
 
   semi_join_query_string += " FROM " + remote_table->name +
                             " JOIN " + stationary_table->interim_name +
