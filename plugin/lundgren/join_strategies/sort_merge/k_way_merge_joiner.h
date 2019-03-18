@@ -111,10 +111,23 @@ public:
         rhs_buffer = std::vector<mysqlx::Row>();
 
         // Move onto next value
-        if (((int)lhs_heap.peek()[lhs_column_index]) <= ((int)rhs_heap.peek()[rhs_column_index])) {
+        if (((int)lhs_heap.peek()[lhs_column_index]) >= ((int)rhs_heap.peek()[rhs_column_index])) {
             current_value = lhs_heap.peek()[lhs_column_index];
+
+            // Tror dette er riktig? i tillegg det å ta høyeste verdi der oppe ^^
+            // skip ahead until we find rows that match
+            while(((int)rhs_heap.peek()[rhs_column_index]) != current_value) {
+              rhs_heap.pop();
+            }
+            
         } else {
             current_value = rhs_heap.peek()[rhs_column_index];
+
+            // skip ahead until we find rows that match
+            while(((int)lhs_heap.peek()[lhs_column_index]) != current_value) {
+              lhs_heap.pop();
+            }
+            
         }
 
         // Buffer all values that are equal to the new "current"
@@ -133,6 +146,7 @@ public:
         if (lhs_heap.has_next() && rhs_heap.has_next()) {
 
             buffer_next_value_candidates();
+
             return std::make_tuple(lhs_buffer, rhs_buffer);
 
         } else {

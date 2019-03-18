@@ -2,6 +2,7 @@
 #include "plugin/lundgren/distributed_query.h"
 #include "plugin/lundgren/join_strategies/common.h"
 #include "plugin/lundgren/helpers.h"
+#include "plugin/lundgren/partitions/node.h"
 #include "plugin/lundgren/join_strategies/sort_merge/k_way_merge_joiner.h"
 // #include "plugin/lundgren/join_strategies/sort_merge/sort_merge_executor.h"
 
@@ -9,6 +10,9 @@
 #define LUNDGREN_SORT_MERGE
 
 std::string generate_order_by_query(L_Table* table, std::string join_column);
+
+std::string generate_joint_table_schema(mysqlx::SqlResult *lhs_res, mysqlx::SqlResult *rhs_res);
+std::string generate_joint_insert_rows_statement(std::vector<mysqlx::Row> lhs_rows, std::vector<mysqlx::Row> rhs_rows, mysqlx::SqlResult *lhs_res, mysqlx::SqlResult *rhs_res);
 
 Distributed_query *execute_sort_merge_distributed_query(L_Parser_info *parser_info) {
 
@@ -49,19 +53,19 @@ Distributed_query *execute_sort_merge_distributed_query(L_Parser_info *parser_in
     }
 
     std::vector<mysqlx::SqlResult*> rhs_streams;
-    mysqlx::SqlResult* res = new mysqlx::SqlResult[rhs_partitions->size()];
-    int i = 0;
+    mysqlx::SqlResult* rhs_res = new mysqlx::SqlResult[rhs_partitions->size()];
+    z = 0;
 
     for (auto &p : *rhs_partitions) {
 
         std::string con_string = generate_connection_string(p.node);
         mysqlx::Session* s = new mysqlx::Session(con_string);
 
-        res[i] = s->sql(rhs_order_query).execute();
+        rhs_res[z] = s->sql(rhs_order_query).execute();
 
-        rhs_streams.push_back(&res[i]);
+        rhs_streams.push_back(&rhs_res[z]);
         sessions.push_back(s);
-        i++;
+        z++;
     }
 
     //-----------------------------------------------------
@@ -95,18 +99,47 @@ Distributed_query *execute_sort_merge_distributed_query(L_Parser_info *parser_in
 
     K_way_merge_joiner merge_joiner = K_way_merge_joiner(lhs_streams, rhs_streams, lhs_join_column_index, rhs_join_column_index);
 
-    std::vector<mysqlx::Row> lhs_candidates;
-    std::vector<mysqlx::Row> rhs_candidates;
+    std::vector<mysqlx::Row> lhs_matches;
+    std::vector<mysqlx::Row> rhs_matches;
 
-    std::tie(lhs_candidates, rhs_candidates) = merge_joiner.fetchNextMatches();
+    std::tie(lhs_matches, rhs_matches) = merge_joiner.fetchNextMatches();
+
+
+
+    // Insertion into interim
+    mysqlx::Session interim_session(generate_connection_string(SelfNode::getNode()));
+
+    std::string create_interim_table_sql = "CREATE TABLE IF NOT EXISTS " + merge_joined_interim_name + " ";
+    create_interim_table_sql += generate_joint_table_schema(lhs_streams.at(0), rhs_streams.at(0));
+
+    std::string insert_into_interim_table_sql = "INSERT INTO " + merge_joined_interim_name + " VALUES ";
+    insert_into_interim_table_sql += generate_joint_insert_rows_statement(lhs_matches, rhs_matches, lhs_streams.at(0), rhs_streams.at(0));
+
+    interim_session.sql(create_interim_table_sql).execute();
+    interim_session.sql(insert_into_interim_table_sql).execute();
+
+    //------------------
 
 
     //--------------------------
+    // Cleanup
+    
+    for (auto &s : sessions) {
+      s->close();
+      delete s;
+    }
 
+    delete[] lhs_res;
+    delete[] rhs_res;
+    
+
+    //--------------------------
+
+    // TODO: get rid of where-transitive-projections from output, either here or in create/insert step
     std::string final_query_string = "SELECT * FROM " + merge_joined_interim_name;
 
     // TEST
-    final_query_string = "SELECT * FROM Person";
+    /* final_query_string = "SELECT * FROM Person"; */
 
     Distributed_query *dq = new Distributed_query();
     dq->rewritten_query = final_query_string;
@@ -120,6 +153,109 @@ std::string generate_order_by_query(L_Table* table, std::string join_column) {
     order_query += " FROM " + table->name;
     order_query += " ORDER BY " + table->name + "." + join_column + " ASC";
     return order_query;
+}
+
+std::string write_data_type_column(const mysqlx::Column& col) {
+  std::string return_string = "";
+  return_string += col.getColumnLabel();
+  return_string += " ";
+    switch (col.getType()) {
+      case mysqlx::Type::BIGINT : 
+        return_string += (col.isNumberSigned()) ? "BIGINT" : "BIGINT UNSIGNED"; break;
+      case mysqlx::Type::INT : 
+        return_string += (col.isNumberSigned()) ? "INT" : "INT UNSIGNED"; break;
+      case mysqlx::Type::DECIMAL : 
+        return_string += (col.isNumberSigned()) ? "DECIMAL" : "DECIMAL UNSIGNED"; break;
+      case mysqlx::Type::DOUBLE : 
+        return_string += (col.isNumberSigned()) ? "DOUBLE" : "DOUBLE UNSIGNED"; break;
+      case mysqlx::Type::STRING : 
+        return_string += "VARCHAR(" + get_column_length(col.getLength()) + ")"; break;
+      default: break;
+    }
+
+    return return_string;
+}
+
+std::string write_typed_insert_value(const mysqlx::Columns *columns, mysqlx::Row row, uint i) {
+  
+  std::string result_string = "";
+  switch ((*columns)[i].getType()) {
+  case mysqlx::Type::BIGINT :
+    result_string += std::to_string(int64_t(row[i])); break;
+  case mysqlx::Type::INT :
+    result_string += std::to_string(int(row[i])); break;
+  case mysqlx::Type::DECIMAL :
+    result_string += std::to_string(double(row[i])); break;
+  case mysqlx::Type::DOUBLE :
+    result_string += std::to_string(double(row[i])); break;
+  case mysqlx::Type::STRING :
+    result_string += std::string("\"") + std::string(row[i]) + std::string("\"") ; break;
+  default: break;
+  }
+
+  return result_string;
+}
+
+
+std::string generate_joint_table_schema(mysqlx::SqlResult *lhs_res, mysqlx::SqlResult *rhs_res) {
+  std::string return_string = "(";
+  uint lhs_column_count = lhs_res->getColumnCount();
+  uint rhs_column_count = rhs_res->getColumnCount();
+
+  for (uint i = 0; i < lhs_column_count; i++) {
+    const mysqlx::Column& col = lhs_res->getColumn(i);
+    return_string += write_data_type_column(col);
+    return_string += ",";
+  }
+  if (rhs_column_count == 0 && !lhs_column_count == 0) {
+    return_string.pop_back();
+  }
+
+  for (uint i = 0; i < rhs_column_count; i++) {
+    const mysqlx::Column& col = rhs_res->getColumn(i);
+    return_string += write_data_type_column(col);
+    return_string += ",";
+  }
+
+  if (!rhs_column_count == 0) {
+    return_string.pop_back();
+  }
+  return return_string + ")";
+}
+
+std::string generate_joint_insert_rows_statement(std::vector<mysqlx::Row> lhs_rows, std::vector<mysqlx::Row> rhs_rows, mysqlx::SqlResult *lhs_res, mysqlx::SqlResult *rhs_res) {
+  std::string result_string = "(";
+
+  const mysqlx::Columns *lhs_columns = &lhs_res->getColumns();
+  const mysqlx::Columns *rhs_columns = &rhs_res->getColumns();
+  uint lhs_column_count = lhs_res->getColumnCount();
+  uint rhs_column_count = rhs_res->getColumnCount();
+
+  // lhs
+  for (uint i = 0; i < lhs_rows.size(); ++i) {
+    result_string += "(";
+
+    for (uint li = 0; li < lhs_column_count; ++li) {
+      result_string += write_typed_insert_value(lhs_columns, lhs_rows[i], li);
+      result_string += ",";
+    }
+    if (rhs_column_count == 0 && !lhs_column_count == 0) {
+      result_string.pop_back();
+    }
+
+    for (uint ri = 0; ri < rhs_column_count; ++ri) {
+      result_string += write_typed_insert_value(rhs_columns, rhs_rows[i], ri);
+      result_string += ",";
+    }
+    if (!rhs_column_count == 0) {
+      result_string.pop_back();
+    }
+    result_string += "),";
+    
+  }
+
+  result_string.pop_back();
+  return result_string;
 }
 
 #endif  // LUNDGREN_SORT_MERGE
