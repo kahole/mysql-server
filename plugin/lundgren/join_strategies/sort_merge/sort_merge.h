@@ -123,7 +123,6 @@ Distributed_query *execute_sort_merge_distributed_query(L_Parser_info *parser_in
 
     //--------------------------
     // Cleanup
-    
     for (auto &s : sessions) {
       s->close();
       delete s;
@@ -224,7 +223,7 @@ std::string generate_joint_table_schema(mysqlx::SqlResult *lhs_res, mysqlx::SqlR
 }
 
 std::string generate_joint_insert_rows_statement(std::vector<mysqlx::Row> lhs_rows, std::vector<mysqlx::Row> rhs_rows, mysqlx::SqlResult *lhs_res, mysqlx::SqlResult *rhs_res) {
-  std::string result_string = "(";
+  std::string result_string = "";
 
   const mysqlx::Columns *lhs_columns = &lhs_res->getColumns();
   const mysqlx::Columns *rhs_columns = &rhs_res->getColumns();

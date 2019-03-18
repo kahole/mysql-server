@@ -21,7 +21,13 @@ public:
     }
 
     bool is_empty() {
-        return (current_row);
+      if (current_row) {
+        return false;
+      } else {
+        return true;
+      }
+      // Yes, i know this ^ looks stupid, but the one below doesn't invoke the bool operator () ?
+        // return (current_row);
     }
 
     mysqlx::Row next() {
@@ -47,6 +53,12 @@ public:
         }
         root = children[0];
         correct_heap();
+    }
+
+    ~K_way_heap() {
+        // for (auto &n : children) {
+        //     delete n;
+        // }
     }
 
     bool has_next() {
@@ -116,7 +128,7 @@ public:
 
             // Tror dette er riktig? i tillegg det å ta høyeste verdi der oppe ^^
             // skip ahead until we find rows that match
-            while(((int)rhs_heap.peek()[rhs_column_index]) != current_value) {
+            while(((int)rhs_heap.peek()[rhs_column_index]) < current_value) {
               rhs_heap.pop();
             }
             
@@ -124,7 +136,7 @@ public:
             current_value = rhs_heap.peek()[rhs_column_index];
 
             // skip ahead until we find rows that match
-            while(((int)lhs_heap.peek()[lhs_column_index]) != current_value) {
+            while(((int)lhs_heap.peek()[lhs_column_index]) < current_value) {
               lhs_heap.pop();
             }
             
@@ -145,7 +157,9 @@ public:
         //if (lhs_buffer.empty() || rhs_buffer.empty()) {
         if (lhs_heap.has_next() && rhs_heap.has_next()) {
 
+          do {
             buffer_next_value_candidates();
+          } while (lhs_buffer.size() == 0 || rhs_buffer.size() == 0);
 
             return std::make_tuple(lhs_buffer, rhs_buffer);
 
