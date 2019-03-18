@@ -56,6 +56,7 @@ public:
     }
 
     ~K_way_heap() {
+        // TODO: fix
         // for (auto &n : children) {
         //     delete n;
         // }
@@ -104,8 +105,6 @@ private:
     int lhs_column_index;
     int rhs_column_index;
 
-    int current_value;
-
 public:
     K_way_merge_joiner(std::vector<mysqlx::SqlResult*> lhs, std::vector<mysqlx::SqlResult*> rhs, int lhs_column_index, int rhs_column_index) {
 
@@ -117,7 +116,13 @@ public:
     }
 
     void buffer_next_value_candidates() {
+        int current_value;
+        // empty buffers
+        lhs_buffer = std::vector<mysqlx::Row>();
+        rhs_buffer = std::vector<mysqlx::Row>();
 
+        while ((lhs_heap.has_next() && rhs_heap.has_next()) && (lhs_buffer.size() == 0 || rhs_buffer.size() == 0)) {
+          
         // empty buffers
         lhs_buffer = std::vector<mysqlx::Row>();
         rhs_buffer = std::vector<mysqlx::Row>();
@@ -126,7 +131,6 @@ public:
         if (((int)lhs_heap.peek()[lhs_column_index]) >= ((int)rhs_heap.peek()[rhs_column_index])) {
             current_value = lhs_heap.peek()[lhs_column_index];
 
-            // Tror dette er riktig? i tillegg det å ta høyeste verdi der oppe ^^
             // skip ahead until we find rows that match
             while(((int)rhs_heap.peek()[rhs_column_index]) < current_value) {
               rhs_heap.pop();
@@ -150,26 +154,28 @@ public:
         while (((int)rhs_heap.peek()[rhs_column_index]) == current_value) {
             rhs_buffer.push_back(rhs_heap.pop());
         }
+        }
     }
 
     std::tuple<std::vector<mysqlx::Row>, std::vector<mysqlx::Row>> fetchNextMatches() {
 
-        //if (lhs_buffer.empty() || rhs_buffer.empty()) {
-        if (lhs_heap.has_next() && rhs_heap.has_next()) {
+        // if (lhs_heap.has_next() && rhs_heap.has_next()) {
 
-          do {
-            buffer_next_value_candidates();
-          } while (lhs_buffer.size() == 0 || rhs_buffer.size() == 0);
+        //   do {
+        //     buffer_next_value_candidates();
+        //   } while (lhs_buffer.size() == 0 || rhs_buffer.size() == 0);
 
-            return std::make_tuple(lhs_buffer, rhs_buffer);
+        //     return std::make_tuple(lhs_buffer, rhs_buffer);
 
-        } else {
-            // return empty vectors in tuple
-            return std::tuple<std::vector<mysqlx::Row>, std::vector<mysqlx::Row>>();
-        }
-        //} else {
+        // } else {
+        //     // return empty vectors in tuple
+        //     return std::tuple<std::vector<mysqlx::Row>, std::vector<mysqlx::Row>>();
+        // }
 
-        //}
+        // New attempt
+        buffer_next_value_candidates();
+
+        return std::make_tuple(lhs_buffer, rhs_buffer);
     }
 };
 
