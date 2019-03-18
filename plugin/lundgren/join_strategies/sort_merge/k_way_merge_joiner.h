@@ -65,7 +65,7 @@ public:
     bool has_next() {
         for (auto &n : children) {
             if (!n->is_empty()) {
-            return true;
+                return true;
             }
         }
         return false;
@@ -116,44 +116,47 @@ public:
     }
 
     void buffer_next_value_candidates() {
+
+        // TODO: REFACTOR
+      
         int current_value;
         // empty buffers
         lhs_buffer = std::vector<mysqlx::Row>();
         rhs_buffer = std::vector<mysqlx::Row>();
 
-        while ((lhs_heap.has_next() && rhs_heap.has_next()) && (lhs_buffer.size() == 0 || rhs_buffer.size() == 0)) {
-          
-        // empty buffers
-        lhs_buffer = std::vector<mysqlx::Row>();
-        rhs_buffer = std::vector<mysqlx::Row>();
+        while (lhs_heap.has_next() && rhs_heap.has_next() && (lhs_buffer.size() == 0 || rhs_buffer.size() == 0)) {
 
-        // Move onto next value
-        if (((int)lhs_heap.peek()[lhs_column_index]) >= ((int)rhs_heap.peek()[rhs_column_index])) {
-            current_value = lhs_heap.peek()[lhs_column_index];
+            // empty buffers
+            lhs_buffer = std::vector<mysqlx::Row>();
+            rhs_buffer = std::vector<mysqlx::Row>();
 
-            // skip ahead until we find rows that match
-            while(((int)rhs_heap.peek()[rhs_column_index]) < current_value) {
-              rhs_heap.pop();
+            // Move onto next value
+            if (((int)lhs_heap.peek()[lhs_column_index]) >= ((int)rhs_heap.peek()[rhs_column_index])) {
+                current_value = lhs_heap.peek()[lhs_column_index];
+
+                // skip ahead until we find rows that match
+                while(rhs_heap.has_next() && ((int)rhs_heap.peek()[rhs_column_index]) < current_value) {
+                    rhs_heap.pop();
+                }
+
+            } else {
+                current_value = rhs_heap.peek()[rhs_column_index];
+
+                // skip ahead until we find rows that match
+                while(lhs_heap.has_next() && ((int)lhs_heap.peek()[lhs_column_index]) < current_value) {
+                    lhs_heap.pop();
+                }
+
             }
-            
-        } else {
-            current_value = rhs_heap.peek()[rhs_column_index];
 
-            // skip ahead until we find rows that match
-            while(((int)lhs_heap.peek()[lhs_column_index]) < current_value) {
-              lhs_heap.pop();
+            // Buffer all values that are equal to the new "current"
+            while (lhs_heap.has_next() && ((int)lhs_heap.peek()[lhs_column_index]) == current_value) {
+                lhs_buffer.push_back(lhs_heap.pop());
             }
-            
-        }
 
-        // Buffer all values that are equal to the new "current"
-        while (((int)lhs_heap.peek()[lhs_column_index]) == current_value) {
-            lhs_buffer.push_back(lhs_heap.pop());
-        }
-
-        while (((int)rhs_heap.peek()[rhs_column_index]) == current_value) {
-            rhs_buffer.push_back(rhs_heap.pop());
-        }
+            while (rhs_heap.has_next() && ((int)rhs_heap.peek()[rhs_column_index]) == current_value) {
+                rhs_buffer.push_back(rhs_heap.pop());
+            }
         }
     }
 

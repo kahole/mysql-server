@@ -114,8 +114,7 @@ Distributed_query *execute_sort_merge_distributed_query(L_Parser_info *parser_in
     std::string insert_into_interim_table_start = "INSERT INTO " + merge_joined_interim_name + " VALUES ";
 
     bool cont = true;
-    int i = 0;
-    while(i < 5 || cont) {
+    while(cont) {
 
         std::tie(lhs_matches, rhs_matches) = merge_joiner.fetchNextMatches();
 
@@ -128,7 +127,6 @@ Distributed_query *execute_sort_merge_distributed_query(L_Parser_info *parser_in
         } else {
           cont = false;
         }
-        i++;
     }
     
     //--------------------------
