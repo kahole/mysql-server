@@ -30,34 +30,46 @@ Distributed_query *execute_sort_merge_distributed_query(L_Parser_info *parser_in
 
     // TODO: flytt all eksekvering til executor saken
 
-    // for (auto &p : *lhs_partitions) {
+    std::vector<mysqlx::Session*> sessions;
 
-    // }
+    std::vector<mysqlx::SqlResult*> lhs_streams;
+    mysqlx::SqlResult* lhs_res = new mysqlx::SqlResult[rhs_partitions->size()];
+    int z = 0;
 
-    // for (auto &p : *rhs_partitions) {
-        
-    // }
+    for (auto &p : *lhs_partitions) {
 
-    // TODO: tråder?
-    // mysqlx::SqlResult lhs_res_1 = execute_sm_query(lhs_order_query, lhs_partitions->at(0).node);
-    // mysqlx::SqlResult rhs_res_1 = execute_sm_query(rhs_order_query, rhs_partitions->at(0).node);
+        std::string con_string = generate_connection_string(p.node);
+        mysqlx::Session* s = new mysqlx::Session(con_string);
 
+        lhs_res[z] = s->sql(lhs_order_query).execute();
 
-    std::string lhs_con_string1 = generate_connection_string(lhs_partitions->at(0).node);
-    std::string rhs_con_string1 = generate_connection_string(rhs_partitions->at(0).node);
+        lhs_streams.push_back(&lhs_res[z]);
+        sessions.push_back(s);
+        z++;
+    }
 
-    mysqlx::Session lhs_s(lhs_con_string1);
-    mysqlx::Session rhs_s(rhs_con_string1);
-    mysqlx::SqlResult lhs_res_1 = lhs_s.sql(lhs_order_query).execute();
-    mysqlx::SqlResult rhs_res_1 = lhs_s.sql(rhs_order_query).execute();
+    std::vector<mysqlx::SqlResult*> rhs_streams;
+    mysqlx::SqlResult* res = new mysqlx::SqlResult[rhs_partitions->size()];
+    int i = 0;
 
+    for (auto &p : *rhs_partitions) {
+
+        std::string con_string = generate_connection_string(p.node);
+        mysqlx::Session* s = new mysqlx::Session(con_string);
+
+        res[i] = s->sql(rhs_order_query).execute();
+
+        rhs_streams.push_back(&res[i]);
+        sessions.push_back(s);
+        i++;
+    }
 
     //-----------------------------------------------------
 
     // FIND LHS JOIN COLUMN INDEX
     uint lhs_join_column_index = 0;
-    const mysqlx::Columns *lhs_columns = &lhs_res_1.getColumns();
-    uint lhs_num_columns = lhs_res_1.getColumnCount();
+    const mysqlx::Columns *lhs_columns = &lhs_streams.at(0)->getColumns();
+    uint lhs_num_columns = lhs_streams.at(0)->getColumnCount();
 
     for (uint i = 0; i < lhs_num_columns; i++) {
         if (std::string((*lhs_columns)[i].getColumnLabel()) == lhs_join_column) {
@@ -68,8 +80,8 @@ Distributed_query *execute_sort_merge_distributed_query(L_Parser_info *parser_in
 
     // FIND RHS JOIN COLUMN INDEX
     uint rhs_join_column_index = 0;
-    const mysqlx::Columns *rhs_columns = &rhs_res_1.getColumns();
-    uint rhs_num_columns = rhs_res_1.getColumnCount();
+    const mysqlx::Columns *rhs_columns = &rhs_streams.at(0)->getColumns();
+    uint rhs_num_columns = rhs_streams.at(0)->getColumnCount();
 
     for (uint i = 0; i < rhs_num_columns; i++) {
         if (std::string((*rhs_columns)[i].getColumnLabel()) == rhs_join_column) {
@@ -80,11 +92,6 @@ Distributed_query *execute_sort_merge_distributed_query(L_Parser_info *parser_in
 
     //-----------------------------------------------------
 
-    std::vector<mysqlx::SqlResult*> lhs_streams;
-    lhs_streams.push_back(&lhs_res_1);
-
-    std::vector<mysqlx::SqlResult*> rhs_streams;
-    rhs_streams.push_back(&rhs_res_1);
 
     K_way_merge_joiner merge_joiner = K_way_merge_joiner(lhs_streams, rhs_streams, lhs_join_column_index, rhs_join_column_index);
 
