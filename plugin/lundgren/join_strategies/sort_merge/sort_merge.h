@@ -14,6 +14,9 @@ std::string generate_order_by_query(L_Table* table, std::string join_column);
 std::string generate_joint_table_schema(mysqlx::SqlResult *lhs_res, mysqlx::SqlResult *rhs_res);
 std::string generate_joint_insert_rows_statement(std::vector<mysqlx::Row> lhs_rows, std::vector<mysqlx::Row> rhs_rows, mysqlx::SqlResult *lhs_res, mysqlx::SqlResult *rhs_res);
 
+std::string generate_projections_string_for_final_query(L_Table* table, std::string interim_name);
+
+
 Distributed_query *execute_sort_merge_distributed_query(L_Parser_info *parser_info) {
 
     std::string merge_joined_interim_name = generate_interim_name();
@@ -139,14 +142,13 @@ Distributed_query *execute_sort_merge_distributed_query(L_Parser_info *parser_in
     delete[] lhs_res;
     delete[] rhs_res;
     
-
     //--------------------------
 
-    // TODO: get rid of where-transitive-projections from output, either here or in create/insert step
-    std::string final_query_string = "SELECT * FROM " + merge_joined_interim_name;
-
-    // TEST
-    /* final_query_string = "SELECT * FROM Person"; */
+    std::string final_query_string = "SELECT "
+        + generate_projections_string_for_final_query(&lhs_table, merge_joined_interim_name)
+        + ((lhs_table.projections.size() > 0 && rhs_table.projections.size() > 0 ) ? ", " : "")
+        + generate_projections_string_for_final_query(&rhs_table, merge_joined_interim_name)
+        + " FROM " + merge_joined_interim_name;
 
     Distributed_query *dq = new Distributed_query();
     dq->rewritten_query = final_query_string;
@@ -263,6 +265,21 @@ std::string generate_joint_insert_rows_statement(std::vector<mysqlx::Row> lhs_ro
 
   result_string.pop_back();
   return result_string;
+}
+
+std::string generate_projections_string_for_final_query(L_Table* table, std::string interim_name) {
+
+  std::string proj_string = "";
+
+  std::vector<std::string>::iterator p = table->projections.begin();
+
+  while (p != table->projections.end()) {
+    proj_string += interim_name + "." + *p;
+    ++p;
+    if (p != table->projections.end()) proj_string += ", ";
+  }
+
+  return proj_string;
 }
 
 #endif  // LUNDGREN_SORT_MERGE
