@@ -40,7 +40,7 @@ public:
 class K_way_heap {
 private:
     K_way_node *root;
-    std::vector<K_way_node*> children;
+    std::vector<K_way_node> children;
     int column_index;
 
 public:
@@ -49,22 +49,15 @@ public:
 
         column_index = c_index;
         for (auto &s : streams) {
-            children.push_back(new K_way_node(s));
+            children.push_back(K_way_node(s));
         }
-        root = children[0];
+        root = &children[0];
         correct_heap();
-    }
-
-    ~K_way_heap() {
-        // TODO: fix
-        // for (auto &n : children) {
-        //     delete n;
-        // }
     }
 
     bool has_next() {
         for (auto &n : children) {
-            if (!n->is_empty()) {
+            if (!n.is_empty()) {
                 return true;
             }
         }
@@ -84,10 +77,10 @@ public:
     void correct_heap() {
         for (auto &n : children) {
             if (root->is_empty()) {
-                root = n;
+                root = &n;
             }
-            if (!n->is_empty() && ((int) n->peek()[column_index]) < ((int) root->peek()[column_index])) {
-                root = n;
+            if (!n.is_empty() && ((int) n.peek()[column_index]) < ((int) root->peek()[column_index])) {
+                root = &n;
             }
         }
     }
