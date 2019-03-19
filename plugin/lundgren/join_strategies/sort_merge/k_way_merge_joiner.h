@@ -21,13 +21,7 @@ public:
     }
 
     bool is_empty() {
-      if (current_row) {
-        return false;
-      } else {
-        return true;
-      }
-      // Yes, i know this ^ looks stupid, but the one below doesn't invoke the bool operator () ?
-        // return (current_row);
+        return !current_row.operator bool();
     }
 
     mysqlx::Row next() {
