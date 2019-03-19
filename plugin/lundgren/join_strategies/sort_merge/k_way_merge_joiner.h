@@ -50,10 +50,6 @@ private:
         return 2*i+1;
     }
 
-    static int parent(int i) {
-        return i/2;
-    }
-
     int at(int i) {
         return (int) nodes[i - 1].peek()[column_index];
     }
@@ -84,6 +80,7 @@ private:
 
         int smallest;
 
+        // Liker ikke at tomme noder propergerer nedover mot andre tomme noder, .. dette skjer vel bare ved siste sift_down kall uansett ^--^
         if (l <= heap_size && (node_empty(i) || (!node_empty(l) && at(l) < at(i)))) {
             smallest = l;
         } else {
@@ -92,8 +89,6 @@ private:
 
         if (r <= heap_size && (node_empty(smallest) || (!node_empty(r) && at(r) < at(smallest)))) {
             smallest = r;
-        } else {
-            smallest = i;
         }
 
         if (smallest != i) {
@@ -126,8 +121,6 @@ public:
         return nodes[0].peek();
     }
 };
-
-
 
 
 //----------------------
