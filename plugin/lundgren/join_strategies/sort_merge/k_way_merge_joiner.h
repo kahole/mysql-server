@@ -84,13 +84,13 @@ private:
 
         int smallest;
 
-        if (l <= heap_size && (node_empty(i) || at(l) < at(i))) {
+        if (l <= heap_size && (node_empty(i) || (!node_empty(l) && at(l) < at(i)))) {
             smallest = l;
         } else {
             smallest = i;
         }
 
-        if (r <= heap_size && (node_empty(smallest) || at(r) < at(smallest))) {
+        if (r <= heap_size && (node_empty(smallest) || (!node_empty(r) && at(r) < at(smallest)))) {
             smallest = r;
         } else {
             smallest = i;
