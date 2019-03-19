@@ -45,6 +45,7 @@
 #include "plugin/lundgren/join_strategies/data_to_query.h"
 #include "plugin/lundgren/join_strategies/semi_join.h"
 #include "plugin/lundgren/join_strategies/bloom_join/bloom_join.h"
+#include "plugin/lundgren/join_strategies/hash_redistribution.h"
 #include "plugin/lundgren/helpers.h"
 
 /* instrument the memory allocation */
