@@ -35,7 +35,7 @@ Distributed_query *execute_sort_merge_distributed_query(L_Parser_info *parser_in
     std::string lhs_order_query = generate_order_by_query(&lhs_table, lhs_join_column);
     std::string rhs_order_query = generate_order_by_query(&rhs_table, rhs_join_column);
 
-    // TODO: flytt all eksekvering til executor saken
+    // TODO: flytt all eksekvering til executor saken?
 
     std::vector<mysqlx::Session*> sessions;
 
@@ -154,6 +154,8 @@ Distributed_query *execute_sort_merge_distributed_query(L_Parser_info *parser_in
     dq->rewritten_query = final_query_string;
     return dq;
 }
+
+
 
 std::string generate_order_by_query(L_Table* table, std::string join_column) {
 

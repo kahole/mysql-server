@@ -104,24 +104,20 @@ public:
 
     void buffer_next_value_candidates() {
 
-        // TODO: REFACTOR
-      
-        int current_value;
-        // empty buffers
-        lhs_buffer = std::vector<mysqlx::Row>();
-        rhs_buffer = std::vector<mysqlx::Row>();
-
         while (lhs_heap.has_next() && rhs_heap.has_next() && (lhs_buffer.size() == 0 || rhs_buffer.size() == 0)) {
+
+            int current_value;
 
             // empty buffers
             lhs_buffer = std::vector<mysqlx::Row>();
             rhs_buffer = std::vector<mysqlx::Row>();
 
-            // Move onto next value
+            // Select current value
             if (((int)lhs_heap.peek()[lhs_column_index]) >= ((int)rhs_heap.peek()[rhs_column_index])) {
+
                 current_value = lhs_heap.peek()[lhs_column_index];
 
-                // skip ahead until we find rows that match
+                // skip ahead until we find rows that are equal or higher
                 while(rhs_heap.has_next() && ((int)rhs_heap.peek()[rhs_column_index]) < current_value) {
                     rhs_heap.pop();
                 }
@@ -129,14 +125,13 @@ public:
             } else {
                 current_value = rhs_heap.peek()[rhs_column_index];
 
-                // skip ahead until we find rows that match
+                // skip ahead until we find rows that are equal or higher
                 while(lhs_heap.has_next() && ((int)lhs_heap.peek()[lhs_column_index]) < current_value) {
                     lhs_heap.pop();
                 }
-
             }
 
-            // Buffer all values that are equal to the new "current"
+            // Buffer all values that are equal to the current value
             while (lhs_heap.has_next() && ((int)lhs_heap.peek()[lhs_column_index]) == current_value) {
                 lhs_buffer.push_back(lhs_heap.pop());
             }
@@ -149,25 +144,13 @@ public:
 
     std::tuple<std::vector<mysqlx::Row>, std::vector<mysqlx::Row>> fetchNextMatches() {
 
-        // if (lhs_heap.has_next() && rhs_heap.has_next()) {
+        // empty buffers
+        lhs_buffer = std::vector<mysqlx::Row>();
+        rhs_buffer = std::vector<mysqlx::Row>();
 
-        //   do {
-        //     buffer_next_value_candidates();
-        //   } while (lhs_buffer.size() == 0 || rhs_buffer.size() == 0);
-
-        //     return std::make_tuple(lhs_buffer, rhs_buffer);
-
-        // } else {
-        //     // return empty vectors in tuple
-        //     return std::tuple<std::vector<mysqlx::Row>, std::vector<mysqlx::Row>>();
-        // }
-
-        // New attempt
         buffer_next_value_candidates();
-
         return std::make_tuple(lhs_buffer, rhs_buffer);
     }
 };
-
 
 #endif  // LUNDGREN_K_WAY
