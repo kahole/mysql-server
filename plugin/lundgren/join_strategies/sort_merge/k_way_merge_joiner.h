@@ -33,7 +33,59 @@ public:
     }
 };
 
-//----------------
+//----------------------
+// Alternative: simpler model heap with k children for the root, and switching out the root when reading next
+
+// class K_way_heap {
+// private:
+//     K_way_node *root;
+//     std::vector<K_way_node> children;
+//     int column_index;
+
+// public:
+//     K_way_heap() {}
+//     K_way_heap(std::vector<mysqlx::SqlResult*> streams, int c_index) {
+
+//         column_index = c_index;
+//         for (auto &s : streams) {
+//             children.push_back(K_way_node(s));
+//         }
+//         root = &children[0];
+//         correct_heap();
+//     }
+
+//     bool has_next() {
+//         for (auto &n : children) {
+//             if (!n.is_empty()) {
+//                 return true;
+//             }
+//         }
+//         return false;
+//     }
+
+//     mysqlx::Row pop() {
+//         mysqlx::Row tmp = root->next();
+//         correct_heap();
+//         return tmp;
+//     }
+
+//     mysqlx::Row peek() {
+//         return root->peek();
+//     }
+
+//     void correct_heap() {
+//         for (auto &n : children) {
+//             if (root->is_empty()) {
+//                 root = &n;
+//             }
+//             if (!n.is_empty() && ((int) n.peek()[column_index]) < ((int) root->peek()[column_index])) {
+//                 root = &n;
+//             }
+//         }
+//     }
+// };
+
+//--------------------
 
 class Bin_heap {
 
@@ -60,9 +112,6 @@ private:
 
     void swap(int t, int f) {
         std::iter_swap(nodes.begin() + t-1, nodes.begin() + f-1);
-        // K_way_node t_node = nodes[t-1];
-        // nodes[t-1] = nodes[f-1];
-        // nodes[f-1] = t_node;
     }
 
     void heapify() {
@@ -119,58 +168,6 @@ public:
 
     mysqlx::Row peek() {
         return nodes[0].peek();
-    }
-};
-
-
-//----------------------
-
-class K_way_heap {
-private:
-    K_way_node *root;
-    std::vector<K_way_node> children;
-    int column_index;
-
-public:
-    K_way_heap() {}
-    K_way_heap(std::vector<mysqlx::SqlResult*> streams, int c_index) {
-
-        column_index = c_index;
-        for (auto &s : streams) {
-            children.push_back(K_way_node(s));
-        }
-        root = &children[0];
-        correct_heap();
-    }
-
-    bool has_next() {
-        for (auto &n : children) {
-            if (!n.is_empty()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    mysqlx::Row pop() {
-        mysqlx::Row tmp = root->next();
-        correct_heap();
-        return tmp;
-    }
-
-    mysqlx::Row peek() {
-        return root->peek();
-    }
-
-    void correct_heap() {
-        for (auto &n : children) {
-            if (root->is_empty()) {
-                root = &n;
-            }
-            if (!n.is_empty() && ((int) n.peek()[column_index]) < ((int) root->peek()[column_index])) {
-                root = &n;
-            }
-        }
     }
 };
 
