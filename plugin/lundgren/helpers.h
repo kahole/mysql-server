@@ -10,6 +10,12 @@
 #ifndef LUNDGREN_HELPERS
 #define LUNDGREN_HELPERS
 
+struct L_parsed_comment_args;
+std::string generate_interim_name();
+std::vector<std::string> split(std::string strToSplit, char delimeter);
+L_parsed_comment_args parse_query_comments(const char *query);
+std::string string_remove_ends(std::string input_string);
+
 std::string generate_interim_name() {
 
   boost::uuids::random_generator generator;
@@ -71,8 +77,6 @@ L_parsed_comment_args parse_query_comments(const char *query) {
   }
   comment_parameters.erase(comment_parameters.begin() + i);
 
-
-
   delimiter = '=';
   std::map<std::string, std::string> comment_parameter_lookup_table;
   for (auto const parameter : comment_parameters) {
@@ -82,6 +86,12 @@ L_parsed_comment_args parse_query_comments(const char *query) {
   } 
 
   return parsed_args;
+}
+
+std::string string_remove_ends(std::string input_string) {
+    input_string.erase(input_string.begin());
+    input_string.pop_back();
+    return input_string;
 }
 
 
