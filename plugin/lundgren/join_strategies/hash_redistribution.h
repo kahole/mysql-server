@@ -10,15 +10,15 @@
 #ifndef LUNDGREN_HASH_REDIST_JOIN
 #define LUNDGREN_HASH_REDIST_JOIN
 
-static Distributed_query *make_hash_redist_join_distributed_query(L_Parser_info *parser_info, L_parsed_comment_args parsed_args);
+static Distributed_query *make_hash_redist_join_distributed_query(L_Parser_info *parser_info, L_parsed_comment_args parsed_args, const char *original_query);
 static bool is_hash_redist_slave(L_parsed_comment_args parsed_args);
-Distributed_query *execute_hash_redist_slave(L_parsed_comment_args parsed_args);
+Distributed_query *execute_hash_redist_slave(L_Parser_info *parser_info, L_parsed_comment_args parsed_args);
 
 static bool is_hash_redist_slave(L_parsed_comment_args parsed_args) {
   return parsed_args.comment_args_lookup_table[HASH_REDIST_SLAVE_FLAG] == "true";
 }
 
-static Distributed_query *make_hash_redist_join_distributed_query(L_Parser_info *parser_info, L_parsed_comment_args parsed_args) {
+static Distributed_query *make_hash_redist_join_distributed_query(L_Parser_info *parser_info, L_parsed_comment_args parsed_args, const char *original_query) {
 
     if (!is_hash_redist_slave(parsed_args)) {
     
@@ -61,9 +61,11 @@ static Distributed_query *make_hash_redist_join_distributed_query(L_Parser_info 
                 pq_sql_statement += table + ':' + interim_table_names[table] + ':' + table_join_column[table] +'|';        
             }
             pq_sql_statement.pop_back(); // Delete last pipe
-            pq_sql_statement += ']';
-            pq_sql_statement += ">*/";
-            pq_sql_statement += "SELECT 1 WHERE false;"; // Query no-op
+            pq_sql_statement += "]>*/";
+            // pq_sql_statement += std::string(original_query); // Query no-op
+            std::string original_query_stripped = std::string(original_query);
+            std::string comment_end = "*/";
+            pq_sql_statement += original_query_stripped.substr(original_query_stripped.find(comment_end) + std::string(comment_end).length());
             stage1.partition_queries.push_back(Partition_query{pq_sql_statement,node_id_to_node_obj[node.first]});
         }
 
@@ -89,18 +91,24 @@ static Distributed_query *make_hash_redist_join_distributed_query(L_Parser_info 
     }
     else
     {
-        return execute_hash_redist_slave(parsed_args);
+        return execute_hash_redist_slave(parser_info, parsed_args);
     }
     
 }
 
-Distributed_query *execute_hash_redist_slave(L_parsed_comment_args parsed_args MY_ATTRIBUTE((unused))) {
+Distributed_query *execute_hash_redist_slave(L_Parser_info *parser_info, L_parsed_comment_args parsed_args) {
     
     Stage stage;
 
     std::string local_tables = parsed_args.comment_args_lookup_table["tables"];
     local_tables = string_remove_ends(local_tables);
     std::vector<std::string> parsed_local_tables = split(local_tables, '|');
+    std::map<std::string, std::string> table_to_projection;
+
+    for (auto &table : parser_info->tables) {
+        table_to_projection[table.name] = generate_projections_string_for_partition_query(&table);
+    }
+
     
     for (auto table : parsed_local_tables) {
         std::string table_name = table.substr(0,table.find(':'));
@@ -109,7 +117,7 @@ Distributed_query *execute_hash_redist_slave(L_parsed_comment_args parsed_args M
 
         std::vector<Partition> *partitions = get_partitions_by_table_name(table_name);
 
-        std::string pq_sql_statement = "SELECT * FROM " + table_name + 
+        std::string pq_sql_statement = "SELECT " + table_to_projection[table_name] + " FROM " + table_name + 
             " WHERE MD5(" + table_join_column + ")%" + std::to_string(partitions->size()) + '=';
         
         for (auto &partition : *partitions) {
