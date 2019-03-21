@@ -101,7 +101,7 @@ static int lundgren_start(MYSQL_THD thd, mysql_event_class_t event_class,
           distributed_query = make_bloom_join_distributed_query(parser_info, parsed_args);
           break;
         case HASH_REDIST:
-          distributed_query = make_hash_redist_join_distributed_query(parser_info, parsed_args);
+          distributed_query = make_hash_redist_join_distributed_query(parser_info, parsed_args, event_parse->query.str);
           break;
         case DATA_TO_QUERY:
         default:
