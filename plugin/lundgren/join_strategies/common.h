@@ -4,6 +4,9 @@
 #ifndef LUNDGREN_COMMON
 #define LUNDGREN_COMMON
 
+static std::string generate_join_query_string(std::vector<L_Table> tables, std::string join_on, bool interim);
+static std::string generate_final_join_query_string(std::vector<L_Table> tables, std::string join_on);
+
 static std::string generate_join_query_string(std::vector<L_Table> tables, std::string join_on, bool interim) {
 
   std::string final_query_string = "SELECT ";
