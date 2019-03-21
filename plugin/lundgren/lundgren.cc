@@ -87,7 +87,9 @@ static int lundgren_start(MYSQL_THD thd, mysql_event_class_t event_class,
       Distributed_query* distributed_query;
       
       if (is_join) {
-        parser_info->tables.pop_back(); //hack
+        if (parser_info != NULL) {
+          parser_info->tables.pop_back(); //hack
+        }
 
         L_parsed_comment_args parsed_args = parse_query_comments(event_parse->query.str);
 
