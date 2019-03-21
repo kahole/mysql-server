@@ -5,6 +5,7 @@
 #include "plugin/lundgren/partitions/node.h"
 #include "plugin/lundgren/constants.h"
 #include "plugin/lundgren/partitions/node.h"
+#include "plugin/lundgren/join_strategies/common.h"
 
 #ifndef LUNDGREN_HASH_REDIST_JOIN
 #define LUNDGREN_HASH_REDIST_JOIN
@@ -39,6 +40,7 @@ static Distributed_query *make_hash_redist_join_distributed_query(L_Parser_info 
         
         for(auto &table : *tables) {
             interim_table_names[table.name] = generate_interim_name();
+            table.interim_name = interim_table_names[table.name];
             table_join_column[table.name] = table.where_transitive_projections[0];
 
             /* Maps nodes with tables they hold and linking id to node objects */
@@ -51,7 +53,7 @@ static Distributed_query *make_hash_redist_join_distributed_query(L_Parser_info 
         Stage stage1;
 
         for (auto node : nodes_and_partitions) {
-            std::string pq_sql_statement = "/*distributed";
+            std::string pq_sql_statement = "/*" PLUGIN_FLAG;
             pq_sql_statement += "<join_strategy=hash_redist,";
             pq_sql_statement += HASH_REDIST_SLAVE_FLAG "=true";
             pq_sql_statement += ",tables=["; // Hack - Format: "[table1:a6fbd:join-col|table2:bcf34:join-col]"
@@ -61,7 +63,7 @@ static Distributed_query *make_hash_redist_join_distributed_query(L_Parser_info 
             pq_sql_statement.pop_back(); // Delete last pipe
             pq_sql_statement += ']';
             pq_sql_statement += ">*/";
-            pq_sql_statement += "DO 0"; // Query no-op
+            pq_sql_statement += "SELECT 1 WHERE false;"; // Query no-op
             stage1.partition_queries.push_back(Partition_query{pq_sql_statement,node_id_to_node_obj[node.first]});
         }
 
@@ -73,8 +75,16 @@ static Distributed_query *make_hash_redist_join_distributed_query(L_Parser_info 
 
         Stage stage2;
 
+        std::string result_interim_table = generate_interim_name();
+        Interim_target it = {result_interim_table, {SelfNode::getNode()}};
+        for (auto node : nodes_and_partitions) {
+            std::string pq_sql_statement = generate_join_query_string(parser_info->tables, parser_info->where_clause, true);
 
-        Distributed_query *dq = new Distributed_query{"DO 0;", {stage1, stage2}};
+            stage2.partition_queries.push_back(Partition_query{pq_sql_statement, node_id_to_node_obj[node.first], it});
+        }
+
+        std::string final_query = "SELECT * FROM " + result_interim_table + ';';
+        Distributed_query *dq = new Distributed_query{final_query, {stage1,stage2}};
         return dq;
     }
     else
@@ -104,8 +114,7 @@ Distributed_query *execute_hash_redist_slave(L_parsed_comment_args parsed_args M
         
         for (auto &partition : *partitions) {
             Interim_target it = {interim_table_name, {partition.node}};
-            pq_sql_statement += std::to_string(partition.node.id);
-            Partition_query pq = {pq_sql_statement, SelfNode::getNode(), it};
+            Partition_query pq = {pq_sql_statement + std::to_string(partition.node.id), SelfNode::getNode(), it};
             stage.partition_queries.push_back(pq);
         }
     }
