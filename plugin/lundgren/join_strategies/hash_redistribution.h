@@ -104,9 +104,13 @@ Distributed_query *execute_hash_redist_slave(L_Parser_info *parser_info, L_parse
     local_tables = string_remove_ends(local_tables);
     std::vector<std::string> parsed_local_tables = split(local_tables, '|');
     std::map<std::string, std::string> table_to_projection;
+    std::map<std::string, Node> nodes_involved;
 
     for (auto &table : parser_info->tables) {
         table_to_projection[table.name] = generate_projections_string_for_partition_query(&table);
+        for (auto &partition : *get_partitions_by_table_name(table.name)) { 
+            nodes_involved[std::to_string(partition.node.id)] = partition.node;
+        }
     }
 
     
@@ -115,14 +119,12 @@ Distributed_query *execute_hash_redist_slave(L_Parser_info *parser_info, L_parse
         std::string interim_table_name = table.substr(table.find(':')+1, table.rfind(':')-table.find(':')-1);
         std::string table_join_column = table.substr(table.rfind(':')+1);
 
-        std::vector<Partition> *partitions = get_partitions_by_table_name(table_name);
-
         std::string pq_sql_statement = "SELECT " + table_to_projection[table_name] + " FROM " + table_name + 
-            " WHERE MD5(" + table_join_column + ")%" + std::to_string(partitions->size()) + '=';
-        
-        for (auto &partition : *partitions) {
-            Interim_target it = {interim_table_name, {partition.node}};
-            Partition_query pq = {pq_sql_statement + std::to_string(partition.node.id), SelfNode::getNode(), it};
+            " WHERE MD5(" + table_join_column + ")%" + std::to_string(nodes_involved.size()) + '=';
+
+        for (auto node : nodes_involved) {
+            Interim_target it = {interim_table_name, {node.second}};
+            Partition_query pq = {pq_sql_statement + std::to_string(node.second.id), SelfNode::getNode(), it};
             stage.partition_queries.push_back(pq);
         }
     }
