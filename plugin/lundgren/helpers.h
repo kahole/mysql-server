@@ -10,6 +10,12 @@
 #ifndef LUNDGREN_HELPERS
 #define LUNDGREN_HELPERS
 
+struct L_parsed_comment_args;
+std::string generate_interim_name();
+std::vector<std::string> split(std::string strToSplit, char delimeter);
+L_parsed_comment_args parse_query_comments(const char *query);
+std::string string_remove_ends(std::string input_string);
+
 std::string generate_interim_name() {
 
   boost::uuids::random_generator generator;
@@ -34,8 +40,14 @@ std::vector<std::string> split(std::string strToSplit, char delimeter)
     return splittedStrings;
 }
 
-enum JOIN_STRATEGY {DATA_TO_QUERY, SEMI, BLOOM, SORT_MERGE};
-const std::map<std::string, JOIN_STRATEGY> join_strategy_string_to_enum = {{"data_to_query", DATA_TO_QUERY}, {"semi", SEMI}, {"bloom", BLOOM}, {"sort_merge", SORT_MERGE}};
+enum JOIN_STRATEGY {DATA_TO_QUERY, SEMI, BLOOM, SORT_MERGE, HASH_REDIST};
+const std::map<std::string, JOIN_STRATEGY> join_strategy_string_to_enum = {
+    {"data_to_query", DATA_TO_QUERY},
+    {"semi", SEMI},
+    {"bloom", BLOOM},
+    {"sort_merge", SORT_MERGE},
+    {"hash_redist", HASH_REDIST}
+  };
 
 struct L_parsed_comment_args {
   JOIN_STRATEGY join_strategy;
@@ -66,8 +78,6 @@ L_parsed_comment_args parse_query_comments(const char *query) {
   }
   comment_parameters.erase(comment_parameters.begin() + i);
 
-
-
   delimiter = '=';
   std::map<std::string, std::string> comment_parameter_lookup_table;
   for (auto const parameter : comment_parameters) {
@@ -77,6 +87,12 @@ L_parsed_comment_args parse_query_comments(const char *query) {
   } 
 
   return parsed_args;
+}
+
+std::string string_remove_ends(std::string input_string) {
+    input_string.erase(input_string.begin());
+    input_string.pop_back();
+    return input_string;
 }
 
 

@@ -77,8 +77,12 @@ int connect_node(std::string node, Partition_query *pq) {
   mysqlx::Session s(node);
   mysqlx::SqlResult res = s.sql(pq->sql_statement).execute();
 
-  std::string result = generate_result_string(&res);
-  std::string table_schema = generate_table_schema(&res);
+  std::string result;
+  std::string table_schema;
+  if (res.hasData()) {
+    result = generate_result_string(&res);
+    table_schema = generate_table_schema(&res);
+  }
 
   s.close();
 

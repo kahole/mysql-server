@@ -46,6 +46,7 @@
 #include "plugin/lundgren/join_strategies/semi_join.h"
 #include "plugin/lundgren/join_strategies/bloom_join/bloom_join.h"
 #include "plugin/lundgren/join_strategies/sort_merge/sort_merge.h"
+#include "plugin/lundgren/join_strategies/hash_redistribution.h"
 #include "plugin/lundgren/helpers.h"
 
 /* instrument the memory allocation */
@@ -87,7 +88,9 @@ static int lundgren_start(MYSQL_THD thd, mysql_event_class_t event_class,
       Distributed_query* distributed_query;
       
       if (is_join) {
-        parser_info->tables.pop_back(); //hack
+        if (parser_info != NULL) {
+          parser_info->tables.pop_back(); //hack
+        }
 
         L_parsed_comment_args parsed_args = parse_query_comments(event_parse->query.str);
 
@@ -100,6 +103,9 @@ static int lundgren_start(MYSQL_THD thd, mysql_event_class_t event_class,
           break;
         case SORT_MERGE:
           distributed_query = execute_sort_merge_distributed_query(parser_info);
+          break;
+        case HASH_REDIST:
+          distributed_query = make_hash_redist_join_distributed_query(parser_info, parsed_args, event_parse->query.str);
           break;
         case DATA_TO_QUERY:
         default:

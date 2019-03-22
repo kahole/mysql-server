@@ -4,6 +4,10 @@
 #ifndef LUNDGREN_COMMON
 #define LUNDGREN_COMMON
 
+static std::string generate_join_query_string(std::vector<L_Table> tables, std::string join_on, bool interim);
+static std::string generate_final_join_query_string(std::vector<L_Table> tables, std::string join_on);
+std::string generate_projections_string_for_partition_query(L_Table* table);
+
 static std::string generate_join_query_string(std::vector<L_Table> tables, std::string join_on, bool interim) {
 
   std::string final_query_string = "SELECT ";
@@ -68,6 +72,5 @@ std::string generate_projections_string_for_partition_query(L_Table* table) {
 
   return proj_string;
 }
-
 
 #endif  // LUNDGREN_COMMON

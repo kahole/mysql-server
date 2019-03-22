@@ -11,20 +11,24 @@ struct Node {
   std::string database;
   std::string user;
   bool is_self = false;
+  int id;
 
   Node(bool is_self_in) : is_self(is_self_in) {
     host = "127.0.0.1";
     port = 13010;
     database = "test";
     user = "root";
+    id = 0;
   }
 
-  Node(char *host_in, uint port_in, char *database_in, char *user_in)
-      : port(port_in) {
+  Node(char *host_in, uint port_in, char *database_in, char *user_in, int id_in)
+      : port(port_in), id(id_in) {
     host = std::string(host_in);
     database = std::string(database_in);
     user = std::string(user_in);
   }
+
+  Node() {}
 };
 
 class SelfNode {

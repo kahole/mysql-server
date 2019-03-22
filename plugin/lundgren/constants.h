@@ -17,5 +17,8 @@
 #define BLOOM_FILTER_REMOTE_TABLE_FLAG "remote_table_name"
 #define BLOOM_FILTER_REMOTE_JOIN_COLUMN_FLAG "remote_join_column"
 
+// HASH REDISTRIBUTION
+#define HASH_REDIST_SLAVE_FLAG "hash_redist_slave"
+
 
 #endif  // LUNDGREN_CONSTANTS
