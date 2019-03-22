@@ -2,9 +2,9 @@
 #include "plugin/lundgren/distributed_query.h"
 #include "plugin/lundgren/join_strategies/common.h"
 #include "plugin/lundgren/helpers.h"
+#include "plugin/lundgren/constants.h"
 #include "plugin/lundgren/partitions/node.h"
 #include "plugin/lundgren/join_strategies/sort_merge/k_way_merge_joiner.h"
-// #include "plugin/lundgren/join_strategies/sort_merge/sort_merge_executor.h"
 
 #ifndef LUNDGREN_SORT_MERGE
 #define LUNDGREN_SORT_MERGE
@@ -104,7 +104,7 @@ Distributed_query *execute_sort_merge_distributed_query(L_Parser_info *parser_in
     mysqlx::Session interim_session(generate_connection_string(SelfNode::getNode()));
 
     std::string create_interim_table_sql = "CREATE TABLE IF NOT EXISTS " + merge_joined_interim_name + " ";
-    create_interim_table_sql += generate_joint_table_schema(lhs_streams.at(0), rhs_streams.at(0));
+    create_interim_table_sql += generate_joint_table_schema(lhs_streams.at(0), rhs_streams.at(0)) + " " + INTERIM_TABLE_ENGINE ";";
 
     interim_session.sql(create_interim_table_sql).execute();
 

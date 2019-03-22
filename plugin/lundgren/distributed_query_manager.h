@@ -3,6 +3,7 @@
 #include <thread>
 #include "plugin/lundgren/internal_query/internal_query_session.h"
 #include "plugin/lundgren/distributed_query.h"
+#include "plugin/lundgren/constants.h"
 
 #ifndef LUNDGREN_DQM
 #define LUNDGREN_DQM
@@ -85,7 +86,7 @@ int connect_node(std::string node, Partition_query *pq) {
     mysqlx::Session interim_session(generate_connection_string(n));
 
     std::string insert_query = "INSERT INTO " + pq->interim_target.interim_table_name + " VALUES " + result;
-    std::string create_table_query = "CREATE TABLE IF NOT EXISTS " + pq->interim_target.interim_table_name + ' ' + table_schema;
+    std::string create_table_query = "CREATE TABLE IF NOT EXISTS " + pq->interim_target.interim_table_name + " " + table_schema + " " + INTERIM_TABLE_ENGINE ";";
     interim_session.sql(create_table_query).execute();
     if (result.length() > 0) {
       interim_session.sql(insert_query).execute();
