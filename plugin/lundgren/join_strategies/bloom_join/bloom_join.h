@@ -48,7 +48,7 @@ static Distributed_query *make_one_sided_bloom_join_distributed_query(L_Parser_i
   // STAGE 2
   Stage stage2;
 
-  std::string bloom_join_query_string = "/*distributed<join_strategy=bloom,";
+  std::string bloom_join_query_string = "/*" PLUGIN_FLAG "<join_strategy=bloom,";
   
   bloom_join_query_string += BLOOM_SLAVE_FLAG "=true,";
   bloom_join_query_string += BLOOM_FILTERED_INTERIM_NAME_FLAG "=" + filtered_remote_interim_name + ",";
@@ -111,7 +111,7 @@ static Distributed_query *make_recursive_bloom_join_distributed_query(L_Parser_i
   std::string join_union_interim_table_name = generate_interim_name();
 
   //Distributed Partition queries
-  std::string recursive_distributed_join_query_string = "/*distributed<join_strategy=bloom," IGNORE_TABLE_PARTITIONS_FLAG "=";
+  std::string recursive_distributed_join_query_string = "/*" PLUGIN_FLAG "<join_strategy=bloom," IGNORE_TABLE_PARTITIONS_FLAG "=";
   recursive_distributed_join_query_string += remote_table->name + ">*/";
 
   recursive_distributed_join_query_string += generate_join_query_string(parser_info->tables, parser_info->where_clause, false);

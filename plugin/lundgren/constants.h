@@ -2,7 +2,12 @@
 #ifndef LUNDGREN_CONSTANTS
 #define LUNDGREN_CONSTANTS
 
+#define INTERIM_TABLE_ENGINE "ENGINE = MEMORY"
+
 #define PLUGIN_FLAG "distributed"
+
+// SEMI (& bloom)
+#define IGNORE_TABLE_PARTITIONS_FLAG "ignore_table_partitions"
 
 // BLOOM JOIN
 #define BLOOM_SLAVE_FLAG "bloom_slave"

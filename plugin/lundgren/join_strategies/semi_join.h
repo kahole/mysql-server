@@ -8,8 +8,6 @@
 #ifndef LUNDGREN_SEMI_JOIN
 #define LUNDGREN_SEMI_JOIN
 
-#define IGNORE_TABLE_PARTITIONS_FLAG "ignore_table_partitions"
-
 // Semi join
 
 static std::string semi_join_generate_final_join_query_string(L_Table *stationary_table, L_Table *remote_table, std::string join_on);
@@ -93,7 +91,7 @@ static Distributed_query *make_recursive_semi_join_distributed_query(L_Parser_in
   //  - send query to every node in remote_partitions
   //  - this avoids the "multiple" query problem
   // TODO: brukt constants.h !!
-  std::string recursive_distributed_join_query_string = "/*distributed<join_strategy=semi," IGNORE_TABLE_PARTITIONS_FLAG "=";
+  std::string recursive_distributed_join_query_string = "/*" PLUGIN_FLAG "<join_strategy=semi," IGNORE_TABLE_PARTITIONS_FLAG "=";
   recursive_distributed_join_query_string += remote_table->name + ">*/";
 
   recursive_distributed_join_query_string += generate_join_query_string(parser_info->tables, parser_info->where_clause, false);
