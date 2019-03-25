@@ -29,22 +29,7 @@ static Distributed_query *make_data_to_query_distributed_query(L_Parser_info *pa
 
     std::string partition_query_string = "SELECT ";
 
-    std::vector<std::string>::iterator p = table.projections.begin();
-
-    while (p != table.projections.end()) {
-      partition_query_string += table.name + "." + *p;
-      ++p;
-      if (p != table.projections.end()) partition_query_string += ", ";
-    }
-    if (table.where_transitive_projections.size() > 0)
-      partition_query_string += ", ";
-    p = table.where_transitive_projections.begin();
-    while (p != table.where_transitive_projections.end()) {
-      partition_query_string += table.name + "." + *p;
-      ++p;
-      if (p != table.where_transitive_projections.end())
-        partition_query_string += ", ";
-    }
+    partition_query_string += generate_projections_string_for_partition_query(&table);
 
     std::string from_table = " FROM " + std::string(table.name);
     table.interim_name = generate_interim_name();
