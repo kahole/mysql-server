@@ -62,7 +62,6 @@ static Distributed_query *make_hash_redist_join_distributed_query(L_Parser_info 
             }
             pq_sql_statement.pop_back(); // Delete last pipe
             pq_sql_statement += "]>*/";
-            // pq_sql_statement += std::string(original_query); // Query no-op
             std::string original_query_stripped = std::string(original_query);
             std::string comment_end = "*/";
             pq_sql_statement += original_query_stripped.substr(original_query_stripped.find(comment_end) + std::string(comment_end).length());
@@ -79,9 +78,8 @@ static Distributed_query *make_hash_redist_join_distributed_query(L_Parser_info 
 
         std::string result_interim_table = generate_interim_name();
         Interim_target it = {result_interim_table, {SelfNode::getNode()}};
+        std::string pq_sql_statement = generate_join_query_string(parser_info->tables, parser_info->where_clause, true);
         for (auto node : nodes_and_partitions) {
-            std::string pq_sql_statement = generate_join_query_string(parser_info->tables, parser_info->where_clause, true);
-
             stage2.partition_queries.push_back(Partition_query{pq_sql_statement, node_id_to_node_obj[node.first], it});
         }
 
