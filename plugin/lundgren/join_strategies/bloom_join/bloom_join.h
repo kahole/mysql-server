@@ -157,9 +157,9 @@ static Distributed_query *make_bloom_join_distributed_query(L_Parser_info *parse
 
     std::vector<Stage> stages;
 
-    L_Table* stationary_table;
-    L_Table* remote_table;
-    std::vector<Partition>* remote_partitions;
+    L_Table* stationary_table = NULL;
+    L_Table* remote_table = NULL;
+    std::vector<Partition>* remote_partitions = NULL;
     bool has_stationary_table = false;
     unsigned int biggest_partition_count = 0;
 
