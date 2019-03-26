@@ -85,8 +85,7 @@ CREATE TABLE Person (
   mass INT,
   hair_color VARCHAR(20),
   gender VARCHAR(20),
-  homeworld INT,
-  FOREIGN KEY (homeworld) REFERENCES Planet(id)
+  homeworld INT
 );
 
 INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUES (44, "Ayla Secura", 178, 55, "none", "female", 37);
