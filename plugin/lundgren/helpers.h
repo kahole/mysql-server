@@ -24,7 +24,7 @@ std::string generate_interim_name() {
 
   boost::erase_all(uuid_string, "-");
 
-  return 'i' + uuid_string; // Must prefix with a letter as numbers are not allowed.
+  return "interim_" + uuid_string; // Must prefix with a letter as numbers are not allowed.
 }
 
 // Split string by delimiter: https://thispointer.com/how-to-split-a-string-in-c/
