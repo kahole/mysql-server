@@ -37,7 +37,7 @@ static Distributed_query *make_one_sided_bloom_join_distributed_query(L_Parser_i
   std::string remote_join_column = remote_table->where_transitive_projections[0];
 
 
-  std::string join_column_projection_query = "SELECT " + stationary_join_column + " FROM " + stationary_table->name;
+  std::string join_column_projection_query = "SELECT DISTINCT " + stationary_join_column + " FROM " + stationary_table->name;
 
   std::string bloom_filter_base64;
   uint64 bf_inserted_count;
