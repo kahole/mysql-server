@@ -56,82 +56,57 @@ Distributed_query *bloom_slave_execute_strategy(L_Parser_info *parser_info MY_AT
     std::string create_table_statement = "CREATE TABLE IF NOT EXISTS " + filtered_interim_name + " ";
     create_table_statement += generate_table_schema(&res) + " " + INTERIM_TABLE_ENGINE ";";
 
-    std::string insert_string = generate_filtered_insert_statement(&res, filter, join_column);
-
-    std::string insert_statement = "INSERT INTO " + filtered_interim_name + " VALUES " + insert_string;
+    //std::string insert_string = generate_filtered_insert_statement(&res, filter, join_column);
+    //std::string insert_statement = "INSERT INTO " + filtered_interim_name + " VALUES " + insert_string;
 
     s.sql(create_table_statement).execute();
 
-    if (insert_string.length() > 0) {
-        s.sql(insert_statement).execute();
+    mysqlx::Schema sch = s.getSchema(SelfNode::getNode().database);
+    mysqlx::Table tbl = sch.getTable(filtered_interim_name);
+    std::list<mysqlx::Row> row_list;
+
+    mysqlx::Row row;
+    const mysqlx::Columns *columns = &res.getColumns();
+    uint num_columns = res.getColumnCount();
+
+    uint filter_column_index = 0;
+
+    for (uint i = 0; i < num_columns; i++) {
+      if (std::string((*columns)[i].getColumnLabel()) == join_column) {
+          filter_column_index = i;
+          break;
+      }
     }
-    
+
+    while ((row = res.fetchOne())) {
+      switch ((*columns)[filter_column_index].getType()) {
+        case mysqlx::Type::INT : 
+          if (!filter.contains(int(row[filter_column_index]))) continue;
+          break;
+        case mysqlx::Type::DECIMAL :
+          if (!filter.contains(double(row[filter_column_index]))) continue;
+          break;
+        case mysqlx::Type::DOUBLE : 
+          if (!filter.contains(double(row[filter_column_index]))) continue;
+          break;
+        case mysqlx::Type::STRING :
+          if (!filter.contains(std::string(row[filter_column_index]))) continue;
+          break;
+        default:
+        break;
+      }
+
+      row_list.push_back(row);
+    }
+
+    if (row_list.size() > 0) {
+      tbl.insert().rows(row_list).execute();
+    }
+
     s.close();
 
     // Doesnt rewrite the query, just continue with the original after placing the data in the correct interim table
     return NULL;
-}
-
-std::string generate_filtered_insert_statement(mysqlx::SqlResult *res, bloom_filter filter MY_ATTRIBUTE((unused)), std::string filter_column MY_ATTRIBUTE((unused))) {
-  mysqlx::Row row;
-  std::string result_string = "";
-  const mysqlx::Columns *columns = &res->getColumns();
-  uint num_columns = res->getColumnCount();
-
-  uint filter_column_index = 0;
-
-  for (uint i = 0; i < num_columns; i++) {
-    if (std::string((*columns)[i].getColumnLabel()) == filter_column) {
-        filter_column_index = i;
-        break;
-    }
-  }
-
-  while ((row = res->fetchOne())) {
-
-    switch ((*columns)[filter_column_index].getType()) {
-      case mysqlx::Type::INT : 
-        if (!filter.contains(int(row[filter_column_index]))) continue;
-        break;
-      case mysqlx::Type::DECIMAL :
-        if (!filter.contains(double(row[filter_column_index]))) continue;
-        break;
-      case mysqlx::Type::DOUBLE : 
-        if (!filter.contains(double(row[filter_column_index]))) continue;
-        break;
-      case mysqlx::Type::STRING :
-        if (!filter.contains(std::string(row[filter_column_index]))) continue;
-        break;
-      default:
-      break;
-    }
-
-    // if (!filter.contains(int(row[filter_column_index]))) {
-    //     continue;
-    // }
-
-    result_string += "(";
-    for (uint i = 0; i < num_columns; i++) {
-      switch ((*columns)[i].getType()) {
-        case mysqlx::Type::BIGINT : 
-          result_string += std::to_string(int64_t(row[i])); break;
-        case mysqlx::Type::INT : 
-          result_string += std::to_string(int(row[i])); break;
-        case mysqlx::Type::DECIMAL :
-          result_string += std::to_string(double(row[i])); break;
-        case mysqlx::Type::DOUBLE : 
-          result_string += std::to_string(double(row[i])); break;
-        case mysqlx::Type::STRING : 
-          result_string += std::string("\"") + std::string(row[i]) + std::string("\"") ; break;
-        default: break;
-      }
-      result_string += ",";
-    }
-    result_string.pop_back();
-    result_string += "),";
-  }
-  result_string.pop_back();
-  return result_string;
 }
 
 
