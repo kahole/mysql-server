@@ -1,0 +1,8 @@
+--source suite/query_rewrite_plugins/include/have_plugin_lundgren.inc
+--replace_regex /\.dll/.so/
+
+INSTALL PLUGIN lundgren SONAME 'lundgren.so';
+
+--sleep 99999999999
+
+UNINSTALL PLUGIN lundgren;
