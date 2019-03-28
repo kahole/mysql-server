@@ -44,10 +44,12 @@ static Distributed_query *make_hash_redist_join_distributed_query(L_Parser_info 
             table_join_column[table.name] = table.join_columns[0];
 
             /* Maps nodes with tables they hold and linking id to node objects */
-            for (auto &partition : *get_partitions_by_table_name(table.name)) { 
+            std::vector<Partition> *partitions = get_partitions_by_table_name(table.name);
+            for (auto &partition : *partitions) { 
                 nodes_and_partitions[std::to_string(partition.node.id)].push_back(table.name);
                 node_id_to_node_obj[std::to_string(partition.node.id)] = partition.node;
             }
+            delete partitions;
         }
 
         Stage stage1;
@@ -103,12 +105,14 @@ Distributed_query *execute_hash_redist_slave(L_Parser_info *parser_info, L_parse
     std::vector<std::string> parsed_local_tables = split(local_tables, '|');
     std::map<std::string, std::string> table_to_projection;
     std::map<std::string, Node> nodes_involved;
-
+    
     for (auto &table : parser_info->tables) {
         table_to_projection[table.name] = generate_projections_string_for_partition_query(&table);
-        for (auto &partition : *get_partitions_by_table_name(table.name)) { 
+        std::vector<Partition> *partitions = get_partitions_by_table_name(table.name);
+        for (auto &partition : *partitions) { 
             nodes_involved[std::to_string(partition.node.id)] = partition.node;
         }
+        delete partitions;
     }
 
     
