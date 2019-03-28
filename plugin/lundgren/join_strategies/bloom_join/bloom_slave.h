@@ -96,9 +96,7 @@ Distributed_query *bloom_slave_execute_strategy(L_Parser_info *parser_info MY_AT
       row_list.push_back(row);
     }
 
-    if (row_list.size() > 0) {
-      tbl.insert().rows(row_list).execute();
-    }
+    tbl.insert().rows(row_list).execute();
 
     s.close();
 
