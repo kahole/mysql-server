@@ -128,9 +128,19 @@ static int lundgren_start(MYSQL_THD thd, mysql_event_class_t event_class,
 
       size_t query_length = distributed_query->rewritten_query.length();
 
-      char *rewritten_query = static_cast<char *>(
-          my_malloc(key_memory_lundgren, query_length, MYF(0)));
-      sprintf(rewritten_query, "%s", distributed_query->rewritten_query.c_str());
+      char *rewritten_query = static_cast<char *>(my_malloc(key_memory_lundgren, query_length+1, MYF(0)));
+      memset(rewritten_query, 0, query_length+1);
+
+      // for (size_t i = 0; i < query_length; i++) {
+      //   rewritten_query[i] = distributed_query->rewritten_query[i];
+      // }
+
+      //rewritten_query[query_length] = '\0';
+
+      // sprintf(rewritten_query, "%s", distributed_query->rewritten_query.c_str());
+
+      strncpy(rewritten_query, distributed_query->rewritten_query.c_str(), query_length);
+
       MYSQL_LEX_STRING new_query = {rewritten_query, query_length};
 
       mysql_parser_parse(thd, new_query, false, NULL, NULL);

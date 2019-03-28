@@ -77,7 +77,12 @@ static void place_projection_in_table(L_Item field_item,
   for (auto &table : *tables) {
     if (table.name == projection.substr(0, projection.find("."))) {
       if (where_transitive_projection) {
-        table.where_transitive_projections.push_back(field);
+
+        // only add as where transitive if not in regular projection set
+        if (std::find(table.projections.begin(), table.projections.end(), field) == table.projections.end()) {
+          table.where_transitive_projections.push_back(field);
+        }
+        table.join_columns.push_back(field);
       } else {
         table.projections.push_back(field);
         table.aliases.push_back(field_item.alias);

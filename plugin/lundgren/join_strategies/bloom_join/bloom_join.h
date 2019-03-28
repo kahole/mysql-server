@@ -33,8 +33,8 @@ static Distributed_query *make_one_sided_bloom_join_distributed_query(L_Parser_i
   std::string filtered_remote_interim_name = generate_interim_name();
   remote_table->interim_name = generate_interim_name();
 
-  std::string stationary_join_column = stationary_table->where_transitive_projections[0];
-  std::string remote_join_column = remote_table->where_transitive_projections[0];
+  std::string stationary_join_column = stationary_table->join_columns[0];
+  std::string remote_join_column = remote_table->join_columns[0];
 
 
   std::string join_column_projection_query = "SELECT DISTINCT " + stationary_join_column + " FROM " + stationary_table->name;

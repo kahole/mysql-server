@@ -41,7 +41,7 @@ std::tuple<std::string, uint64> generate_bloom_filter_from_query(std::string que
                 filter.insert(double(row[0]));
                 break;
             case mysqlx::Type::STRING :
-                filter.insert(std::string(row[0]).c_str());
+                filter.insert(std::string(row[0]));
                 break;
             default:
             break;

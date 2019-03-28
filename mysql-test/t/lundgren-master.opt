@@ -2,3 +2,5 @@ $LUNDGREN_OPT
 
 --innodb-buffer-pool-size=8G
 --innodb-buffer-pool-instances=16
+
+--secure-file-priv=""

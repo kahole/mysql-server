@@ -27,8 +27,8 @@ static Distributed_query *make_one_sided_semi_join_distributed_query(L_Parser_in
   // STAGE 1
   Stage stage1;
 
-  std::string stationary_join_column = stationary_table->where_transitive_projections[0];
-  std::string remote_join_column = remote_table->where_transitive_projections[0];
+  std::string stationary_join_column = stationary_table->join_columns[0];
+  std::string remote_join_column = remote_table->join_columns[0];
 
   std::string join_column_projection_query_string = "SELECT DISTINCT " + stationary_join_column + " FROM " + stationary_table->name;
 

@@ -137,6 +137,30 @@ INSERT INTO Person (id, name, height, mass, hair_color, gender, homeworld) VALUE
 #--------------------------------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------------------------------
 
+create table Imovie (
+  movieId VARCHAR(20) PRIMARY KEY,
+  titleType VARCHAR(20),
+  primaryTitle VARCHAR(20),
+  originalTitle VARCHAR(20),
+  isAdult INT,
+  startYear INT,
+  endYear INT,
+  runtimeMinutes INT,
+  genres VARCHAR(30)
+  );
+create table Iperson (
+  personId VARCHAR(20) PRIMARY KEY,
+  directors VARCHAR(40),
+  writers VARCHAR(40)
+  );
+
+
+INSERT INTO Imovie VALUES ("padme", "padme", "padme", "padme", 0, 0, 0, 0, "padme");
+INSERT INTO Imovie VALUES ("padme2", "padme", "padme", "padme", 0, 0, 0, 0, "padme");
+INSERT INTO Iperson VALUES ("padme", "padme", "padme");
+INSERT INTO Iperson VALUES ("padme2", "padme", "padme");
+
+
 #--------------------------------------------------------------------------------------------------------
 # META DATA TABLES
 #--------------------------------------------------------------------------------------------------------
@@ -174,13 +198,16 @@ INSERT INTO lundgren_node VALUES (0, "127.0.0.1", 13010, "test", "root", NULL);
 INSERT INTO lundgren_shard_key VALUES (2, "height", 165, 500);
 INSERT INTO lundgren_shard_key VALUES (3, "mass", 0, 165);
 
-INSERT INTO lundgren_partition VALUES (1, 2, 2, "Person");
-INSERT INTO lundgren_partition VALUES (2, 2, 3, "Planet");
-#INSERT INTO lundgren_partition VALUES (3, 2, 3, "Planet");
-#INSERT INTO lundgren_partition VALUES (4, 2, 2, "Person");
+INSERT INTO lundgren_partition VALUES (1, 0, 2, "Person");
+INSERT INTO lundgren_partition VALUES (2, 0, 3, "Planet");
+#INSERT INTO lundgren_partition VALUES (3, 1, 3, "Planet");
+#INSERT INTO lundgren_partition VALUES (4, 1, 2, "Person");
 
 #INSERT INTO lundgren_partition VALUES (1, 1, 1, "Person");
 #INSERT INTO lundgren_partition VALUES (3, 3, 3, "Planet");
+
+INSERT INTO lundgren_partition VALUES (55, 0, 2, "Iperson");
+INSERT INTO lundgren_partition VALUES (56, 0, 3, "Imovie");
 
 #--------------------------------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------------------------------

@@ -593,7 +593,7 @@ static inline void free_plugin_mem(st_plugin_dl *p) {
     PSI_SYSTEM_CALL(unload_plugin)
     (std::string(p->dl.str, p->dl.length).c_str());
 #endif
-    dlclose(p->handle);
+    //dlclose(p->handle);
   }
   my_free(p->dl.str);
   if (p->version != MYSQL_PLUGIN_INTERFACE_VERSION) my_free(p->plugins);

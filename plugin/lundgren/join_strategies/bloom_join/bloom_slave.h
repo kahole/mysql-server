@@ -100,7 +100,7 @@ std::string generate_filtered_insert_statement(mysqlx::SqlResult *res, bloom_fil
         if (!filter.contains(double(row[filter_column_index]))) continue;
         break;
       case mysqlx::Type::STRING :
-        if (!filter.contains(std::string(row[filter_column_index]).c_str())) continue;
+        if (!filter.contains(std::string(row[filter_column_index]))) continue;
         break;
       default:
       break;

@@ -29,8 +29,8 @@ Distributed_query *execute_sort_merge_distributed_query(L_Parser_info *parser_in
     std::vector<Partition>* lhs_partitions = get_partitions_by_table_name(lhs_table.name);
     std::vector<Partition>* rhs_partitions = get_partitions_by_table_name(rhs_table.name);
 
-    std::string lhs_join_column = lhs_table.where_transitive_projections[0];
-    std::string rhs_join_column = rhs_table.where_transitive_projections[0];
+    std::string lhs_join_column = lhs_table.join_columns[0];
+    std::string rhs_join_column = rhs_table.join_columns[0];
 
     std::string lhs_order_query = generate_order_by_query(&lhs_table, lhs_join_column);
     std::string rhs_order_query = generate_order_by_query(&rhs_table, rhs_join_column);

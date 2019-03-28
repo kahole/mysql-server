@@ -41,7 +41,7 @@ static Distributed_query *make_hash_redist_join_distributed_query(L_Parser_info 
         for(auto &table : *tables) {
             interim_table_names[table.name] = generate_interim_name();
             table.interim_name = interim_table_names[table.name];
-            table_join_column[table.name] = table.where_transitive_projections[0];
+            table_join_column[table.name] = table.join_columns[0];
 
             /* Maps nodes with tables they hold and linking id to node objects */
             for (auto &partition : *get_partitions_by_table_name(table.name)) { 
