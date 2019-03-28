@@ -58,10 +58,8 @@ int connect_node(std::string node, Partition_query *pq) {
       
       mysqlx::Schema schema = interim_session.getSchema(pq->node.database);
       mysqlx::Table table = schema.getTable(pq->interim_target.interim_table_name);
+      table.insert().rows(row_list).execute();
 
-      if (row_list.size() > 0){
-        table.insert().rows(row_list).execute();
-      }
       interim_session.close();
     }
   }
