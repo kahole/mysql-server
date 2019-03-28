@@ -43,60 +43,69 @@ std::string generate_table_schema(mysqlx::SqlResult *res) {
   return return_string + ")";
 }
 
-std::string generate_result_string(mysqlx::SqlResult *res) {
-  mysqlx::Row row;
-  std::string result_string = "";
-  const mysqlx::Columns *columns = &res->getColumns();
-  uint num_columns = res->getColumnCount();
-  while ((row = res->fetchOne())) {
-    result_string += "(";
-    for (uint i = 0; i < num_columns; i++) {
-      switch ((*columns)[i].getType()) {
-        case mysqlx::Type::BIGINT : 
-          result_string += std::to_string(int64_t(row[i])); break;
-        case mysqlx::Type::INT : 
-          result_string += std::to_string(int(row[i])); break;
-        case mysqlx::Type::DECIMAL :
-          result_string += std::to_string(double(row[i])); break;
-        case mysqlx::Type::DOUBLE : 
-          result_string += std::to_string(double(row[i])); break;
-        case mysqlx::Type::STRING : 
-          result_string += std::string("\"") + std::string(row[i]) + std::string("\"") ; break;
-        default: break;
-      }
-      result_string += ",";
-    }
-    result_string.pop_back();
-    result_string += "),";
-  }
-  result_string.pop_back();
-  return result_string;
-}
+// std::string generate_result_string(mysqlx::SqlResult *res) {
+//   mysqlx::Row row;
+//   std::string result_string = "";
+//   const mysqlx::Columns *columns = &res->getColumns();
+//   uint num_columns = res->getColumnCount();
+//   while ((row = res->fetchOne())) {
+//     result_string += "(";
+//     for (uint i = 0; i < num_columns; i++) {
+//       switch ((*columns)[i].getType()) {
+//         case mysqlx::Type::BIGINT : 
+//           result_string += std::to_string(int64_t(row[i])); break;
+//         case mysqlx::Type::INT : 
+//           result_string += std::to_string(int(row[i])); break;
+//         case mysqlx::Type::DECIMAL :
+//           result_string += std::to_string(double(row[i])); break;
+//         case mysqlx::Type::DOUBLE : 
+//           result_string += std::to_string(double(row[i])); break;
+//         case mysqlx::Type::STRING : 
+//           result_string += std::string("\"") + std::string(row[i]) + std::string("\"") ; break;
+//         default: break;
+//       }
+//       result_string += ",";
+//     }
+//     result_string.pop_back();
+//     result_string += "),";
+//   }
+//   result_string.pop_back();
+//   return result_string;
+// }
 
 int connect_node(std::string node, Partition_query *pq) {
   mysqlx::Session s(node);
   mysqlx::SqlResult res = s.sql(pq->sql_statement).execute();
 
-  std::string result;
-  std::string table_schema;
   if (res.hasData()) {
-    result = generate_result_string(&res);
+    // std::string result;
+    std::string table_schema;
+    std::list<mysqlx::Row> row_list = res.fetchAll();
+
+    // result = generate_result_string(&res);
     table_schema = generate_table_schema(&res);
-  }
 
-  s.close();
 
-  for (auto n : pq->interim_target.nodes) {
-    mysqlx::Session interim_session(generate_connection_string(n));
+    for (auto n : pq->interim_target.nodes) {
+      mysqlx::Session interim_session(generate_connection_string(n));
+      
+      // std::string insert_query = "INSERT INTO " + pq->interim_target.interim_table_name + " VALUES " + result;
+      std::string create_table_query = "CREATE TABLE IF NOT EXISTS " + pq->interim_target.interim_table_name + " " + table_schema + " " + INTERIM_TABLE_ENGINE ";";
+      interim_session.sql(create_table_query).execute();
+      
+      mysqlx::Schema schema = interim_session.getSchema(pq->node.database);
+      mysqlx::Table table = schema.getTable(pq->interim_target.interim_table_name);
 
-    std::string insert_query = "INSERT INTO " + pq->interim_target.interim_table_name + " VALUES " + result;
-    std::string create_table_query = "CREATE TABLE IF NOT EXISTS " + pq->interim_target.interim_table_name + " " + table_schema + " " + INTERIM_TABLE_ENGINE ";";
-    interim_session.sql(create_table_query).execute();
-    if (result.length() > 0) {
-      interim_session.sql(insert_query).execute();
+      if (row_list.size() > 0){
+        table.insert().rows(row_list).execute();
+      }
+      // if (result.length() > 0) {
+      //   interim_session.sql(insert_query).execute();
+      // }
+      interim_session.close();
     }
-    interim_session.close();
   }
+  s.close();
   return 0;
 }
 
