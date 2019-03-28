@@ -46,8 +46,6 @@ std::tuple<std::string, uint64> generate_bloom_filter_from_query(std::string que
             default:
             break;
             }
-
-            // filter.insert(int(row[0]));
         }
     }
     s.close();

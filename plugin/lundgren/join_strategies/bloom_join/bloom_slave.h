@@ -24,11 +24,6 @@ bloom_filter parse_bloom_filter(L_parsed_comment_args parsed_args) {
 
     bloom_filter bf(get_bloom_parameters(bf_inserted_count));
 
-    // Test:
-    // bf.insert(42);
-    // bit_table = bit_table;
-    // end test
-
     bf.bit_table_ = bit_table;
 
     return bf;
