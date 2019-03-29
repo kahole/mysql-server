@@ -44,7 +44,15 @@ static Distributed_query *make_data_to_query_distributed_query(L_Parser_info *pa
 
       std::vector<Node> target_nodes{SelfNode::getNode()};
 
-      Interim_target interim_target = {table.interim_name, target_nodes};
+      Interim_target interim_target;
+      
+       if (is_join) {
+        interim_target = {table.interim_name, target_nodes, table.join_columns[0]};
+
+       } else {
+        interim_target = {table.interim_name, target_nodes};
+       }
+       
 
       Partition_query pq = {partition_query_string, p->node, interim_target};
       partition_queries.push_back(pq);

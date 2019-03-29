@@ -38,7 +38,7 @@ static Distributed_query *make_one_sided_semi_join_distributed_query(L_Parser_in
     target_nodes.push_back(p.node);
   }
   
-  Interim_target interim_target = {stationary_table->interim_name, target_nodes};
+  Interim_target interim_target = {stationary_table->interim_name, target_nodes, stationary_join_column}; // index
   Partition_query pq = {join_column_projection_query_string, SelfNode::getNode(), interim_target};
 
   stage1.partition_queries.push_back(pq);
@@ -57,7 +57,7 @@ static Distributed_query *make_one_sided_semi_join_distributed_query(L_Parser_in
                             " = " + remote_table->name + "." + remote_join_column;
 
   std::vector<Node> stage2_target_nodes{SelfNode::getNode()}; //vector of self-node
-  Interim_target stage2_interim_target = {remote_table->interim_name, stage2_target_nodes};
+  Interim_target stage2_interim_target = {remote_table->interim_name, stage2_target_nodes, remote_join_column}; // index
 
   for (auto &p : *remote_partitions) {
     Partition_query pq = {semi_join_query_string, p.node, stage2_interim_target};

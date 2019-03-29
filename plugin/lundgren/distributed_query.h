@@ -27,6 +27,7 @@ struct L_Parser_info {
 struct Interim_target {
     std::string interim_table_name;
     std::vector<Node> nodes;
+    std::string index_name;
     //bool is_temp;
 };
 

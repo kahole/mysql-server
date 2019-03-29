@@ -77,12 +77,9 @@ static Distributed_query *make_one_sided_bloom_join_distributed_query(L_Parser_i
   }
 
   bloom_join_query_string += " FROM " + filtered_remote_interim_name;
-                            // " JOIN " + stationary_table->interim_name +
-                            // " ON " + stationary_table->interim_name + "." + stationary_join_column +
-                            // " = " + remote_table->name + "." + remote_join_column;
 
   std::vector<Node> stage2_target_nodes{SelfNode::getNode()}; //vector of self-node
-  Interim_target stage2_interim_target = {remote_table->interim_name, stage2_target_nodes};
+  Interim_target stage2_interim_target = {remote_table->interim_name, stage2_target_nodes, remote_join_column}; // index
 
   for (auto &p : *remote_partitions) {
     Partition_query pq = {bloom_join_query_string, p.node, stage2_interim_target};

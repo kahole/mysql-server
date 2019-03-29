@@ -125,7 +125,7 @@ Distributed_query *execute_hash_redist_slave(L_Parser_info *parser_info, L_parse
             " WHERE MD5(" + table_join_column + ")%" + std::to_string(nodes_involved.size()) + '=';
 
         for (auto node : nodes_involved) {
-            Interim_target it = {interim_table_name, {node.second}};
+            Interim_target it = {interim_table_name, {node.second}, table_join_column};
             Partition_query pq = {pq_sql_statement + std::to_string(node.second.id), SelfNode::getNode(), it};
             stage.partition_queries.push_back(pq);
         }

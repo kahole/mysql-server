@@ -48,6 +48,12 @@ int connect_node(std::string node, Partition_query *pq) {
 
   if (res.hasData()) {
     std::string table_schema = generate_table_schema(&res);
+
+    if (pq->interim_target.index_name.length() > 0) {
+      table_schema.pop_back();
+      table_schema += ", INDEX (" + pq->interim_target.index_name + "))";
+    }
+
     std::list<mysqlx::Row> row_list = res.fetchAll();
 
     for (auto n : pq->interim_target.nodes) {

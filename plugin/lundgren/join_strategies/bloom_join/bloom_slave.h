@@ -49,7 +49,13 @@ Distributed_query *bloom_slave_execute_strategy(L_Parser_info *parser_info MY_AT
     mysqlx::SqlResult res = s.sql(query_for_filtering).execute();
 
     std::string create_table_statement = "CREATE TABLE IF NOT EXISTS " + filtered_interim_name + " ";
-    create_table_statement += generate_table_schema(&res) + " " + INTERIM_TABLE_ENGINE ";";
+
+    std::string schema = generate_table_schema(&res);
+
+    schema.pop_back();
+    schema += ", INDEX (" + join_column + "))"; // index
+
+    create_table_statement += schema + " " + INTERIM_TABLE_ENGINE ";";
 
     s.sql(create_table_statement).execute();
 
