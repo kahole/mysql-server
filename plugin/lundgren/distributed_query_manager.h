@@ -69,7 +69,7 @@ int connect_node(std::string node, Partition_query *pq) {
     //   interim_session.close();
     // }
 
-    mysqlx::Session interim_session(generate_connection_string(pq->interim_target.nodes[0]));
+    mysqlx::Session interim_session(generate_connection_string(pq->interim_target.node));
 
     std::string create_table_query = "CREATE TABLE IF NOT EXISTS " + pq->interim_target.interim_table_name + " " + table_schema + " " + INTERIM_TABLE_ENGINE ";";
     interim_session.sql(create_table_query).execute();
