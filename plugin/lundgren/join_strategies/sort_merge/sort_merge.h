@@ -130,7 +130,9 @@ Distributed_query *execute_sort_merge_distributed_query(L_Parser_info *parser_in
           //interim_session.sql(insert_into_interim_table_sql).execute();
 
           //std::list<mysqlx::Row> merged_row_list(lhs_matches.size()*rhs_matches.size(), mysqlx::Row());
-          std::list<mysqlx::Row> merged_row_list;
+          /* std::list<mysqlx::Row> merged_row_list; */
+
+          auto insert = table.insert();
 
           for (uint i = 0; i < lhs_matches.size(); ++i) {
             for (uint z = 0; z < rhs_matches.size(); ++z) {
@@ -138,21 +140,32 @@ Distributed_query *execute_sort_merge_distributed_query(L_Parser_info *parser_in
               //merged_row_list[i*z+z].insert(merged_row_list[i*z+z].end(), lhs_matches[i].begin(), lhs_matches[i].end());
               //merged_row_list[i*z+z].insert(merged_row_list[i*z+z].end(), rhs_matches[z].begin(), rhs_matches[z].end());
 
-              auto insert = tbl.insert();
-              insert.values("ID#1", (int64_t)-9223372036854775807LL);
-              insert.values("ID#3", (int64_t)9223372036854775805LL);
-              insert.values("ID#4", (int64_t)9223372036854775806LL);
-              insert.execute();
+              // TODO:
+              // Kan gj;re insert.values(row) med row object i DQM! da slipper vi aa bygge opp en liste!!
+              //        samme i bloom join slave
 
-              mysqlx::Row r;
-              r.insert(r.end(), lhs_matches[i].begin(), lhs_matches[i].end());
-              r.insert(r.end(), rhs_matches[z].begin(), rhs_matches[z].end());
-              merged_row_list.push_back(r);
-              //rhs_matches[z]
+              std::vector<mysqlx::Value&> merged_row;
+              merged_row.reserve(lhs_num_columns + rhs_num_columns);
+
+              for (int lhs_c = 0; lhs_c < lhs_num_columns; lhs_c++) {
+                merged_row.emplace_back(lhs_matches[i][lhs_c]);
+              }
+
+              for (int rhs_c = 0; rhs_c < rhs_num_columns; rhs_c++) {
+                merged_row.emplace_back(rhs_matches[i][rhs_c]);
+              }
+
+              insert.values(merged_row);
+              
+              /* mysqlx::Row r; */
+              /* r.insert(r.end(), lhs_matches[i].begin(), lhs_matches[i].end()); */
+              /* r.insert(r.end(), rhs_matches[z].begin(), rhs_matches[z].end()); */
+              /* merged_row_list.push_back(r); */
             }
           }
 
-          table.insert().rows(merged_row_list).execute();
+          insert.execute();
+          /* table.insert().rows(merged_row_list).execute(); */
 
         } else {
           cont = false;
