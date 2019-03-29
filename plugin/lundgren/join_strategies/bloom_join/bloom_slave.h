@@ -61,7 +61,7 @@ Distributed_query *bloom_slave_execute_strategy(L_Parser_info *parser_info MY_AT
 
     mysqlx::Schema sch = s.getSchema(SelfNode::getNode().database);
     mysqlx::Table tbl = sch.getTable(filtered_interim_name);
-    std::list<mysqlx::Row> row_list;
+    /* std::list<mysqlx::Row> row_list; */
 
     mysqlx::Row row;
     const mysqlx::Columns *columns = &res.getColumns();
@@ -75,6 +75,10 @@ Distributed_query *bloom_slave_execute_strategy(L_Parser_info *parser_info MY_AT
           break;
       }
     }
+
+    auto insert = tbl.insert();
+
+    //TODO: batch-inserts??
 
     while ((row = res.fetchOne())) {
       switch ((*columns)[filter_column_index].getType()) {
@@ -94,10 +98,12 @@ Distributed_query *bloom_slave_execute_strategy(L_Parser_info *parser_info MY_AT
         break;
       }
 
-      row_list.push_back(row);
+      insert.values(row);
+      /* row_list.push_back(row); */
     }
 
-    tbl.insert().rows(row_list).execute();
+    /* tbl.insert().rows(row_list).execute(); */
+    insert.execute();
 
     s.close();
 
