@@ -54,20 +54,40 @@ int connect_node(std::string node, Partition_query *pq) {
       table_schema += ", INDEX (" + pq->interim_target.index_name + "))";
     }
 
-    std::list<mysqlx::Row> row_list = res.fetchAll();
+    // std::list<mysqlx::Row> row_list = res.fetchAll();
 
-    for (auto n : pq->interim_target.nodes) {
-      mysqlx::Session interim_session(generate_connection_string(n));
+    // for (auto n : pq->interim_target.nodes) {
+    //   mysqlx::Session interim_session(generate_connection_string(n));
 
-      std::string create_table_query = "CREATE TABLE IF NOT EXISTS " + pq->interim_target.interim_table_name + " " + table_schema + " " + INTERIM_TABLE_ENGINE ";";
-      interim_session.sql(create_table_query).execute();
+    //   std::string create_table_query = "CREATE TABLE IF NOT EXISTS " + pq->interim_target.interim_table_name + " " + table_schema + " " + INTERIM_TABLE_ENGINE ";";
+    //   interim_session.sql(create_table_query).execute();
       
+    //   mysqlx::Schema schema = interim_session.getSchema(pq->node.database);
+    //   mysqlx::Table table = schema.getTable(pq->interim_target.interim_table_name);
+    //   table.insert().rows(row_list).execute();
+
+    //   interim_session.close();
+    // }
+
+    mysqlx::Session interim_session(generate_connection_string(pq->interim_target.nodes[0]));
+
+    std::string create_table_query = "CREATE TABLE IF NOT EXISTS " + pq->interim_target.interim_table_name + " " + table_schema + " " + INTERIM_TABLE_ENGINE ";";
+    interim_session.sql(create_table_query).execute();
+    
+    while(res.count() > 0) {
+      std::list<mysqlx::Row> row_list;
+      mysqlx::Row row;
+      int n = 1000;
+      while(n-- || (row = res.fetchOne()){
+        row_list.push_back(row);
+      }
+
       mysqlx::Schema schema = interim_session.getSchema(pq->node.database);
       mysqlx::Table table = schema.getTable(pq->interim_target.interim_table_name);
       table.insert().rows(row_list).execute();
-
-      interim_session.close();
     }
+
+    interim_session.close();
   }
   s.close();
   return 0;
