@@ -125,20 +125,10 @@ Distributed_query *execute_sort_merge_distributed_query(L_Parser_info *parser_in
 
         if (lhs_matches.size() > 0 && rhs_matches.size() > 0) {
 
-          //std::string insert_into_interim_table_sql = insert_into_interim_table_start;
-          //insert_into_interim_table_sql += generate_joint_insert_rows_statement(lhs_matches, rhs_matches, lhs_streams.at(0), rhs_streams.at(0));
-          //interim_session.sql(insert_into_interim_table_sql).execute();
-
-          //std::list<mysqlx::Row> merged_row_list(lhs_matches.size()*rhs_matches.size(), mysqlx::Row());
-          /* std::list<mysqlx::Row> merged_row_list; */
-
           auto insert = table.insert();
 
           for (uint i = 0; i < lhs_matches.size(); ++i) {
             for (uint z = 0; z < rhs_matches.size(); ++z) {
-
-              //merged_row_list[i*z+z].insert(merged_row_list[i*z+z].end(), lhs_matches[i].begin(), lhs_matches[i].end());
-              //merged_row_list[i*z+z].insert(merged_row_list[i*z+z].end(), rhs_matches[z].begin(), rhs_matches[z].end());
 
               // TODO:
               // Kan gj;re insert.values(row) med row object i DQM! da slipper vi aa bygge opp en liste!!
@@ -156,16 +146,10 @@ Distributed_query *execute_sort_merge_distributed_query(L_Parser_info *parser_in
               }
 
               insert.values(merged_row);
-              
-              /* mysqlx::Row r; */
-              /* r.insert(r.end(), lhs_matches[i].begin(), lhs_matches[i].end()); */
-              /* r.insert(r.end(), rhs_matches[z].begin(), rhs_matches[z].end()); */
-              /* merged_row_list.push_back(r); */
             }
           }
 
           insert.execute();
-          /* table.insert().rows(merged_row_list).execute(); */
 
         } else {
           cont = false;
@@ -196,7 +180,6 @@ Distributed_query *execute_sort_merge_distributed_query(L_Parser_info *parser_in
     dq->rewritten_query = final_query_string;
     return dq;
 }
-
 
 
 std::string generate_order_by_query(L_Table* table, std::string join_column) {
