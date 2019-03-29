@@ -32,16 +32,16 @@ static Distributed_query *make_one_sided_semi_join_distributed_query(L_Parser_in
 
   std::string join_column_projection_query_string = "SELECT DISTINCT " + stationary_join_column + " FROM " + stationary_table->name;
 
-  std::vector<Node> target_nodes;
+  // std::vector<Node> target_nodes;
 
   for (auto &p : *remote_partitions) {
-    target_nodes.push_back(p.node);
+    // target_nodes.push_back(p.node);
+    Interim_target interim_target = {stationary_table->interim_name, {p.node}, stationary_join_column}; // index
+    Partition_query pq = {join_column_projection_query_string, SelfNode::getNode(), interim_target};
+
+    stage1.partition_queries.push_back(pq);
   }
   
-  Interim_target interim_target = {stationary_table->interim_name, target_nodes, stationary_join_column}; // index
-  Partition_query pq = {join_column_projection_query_string, SelfNode::getNode(), interim_target};
-
-  stage1.partition_queries.push_back(pq);
   stages.push_back(stage1);
 
   // STAGE 2
