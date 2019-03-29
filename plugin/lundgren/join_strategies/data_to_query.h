@@ -42,15 +42,13 @@ static Distributed_query *make_data_to_query_distributed_query(L_Parser_info *pa
     for (std::vector<Partition>::iterator p = partitions->begin();
          p != partitions->end(); ++p) {
 
-      std::vector<Node> target_nodes{SelfNode::getNode()};
-
       Interim_target interim_target;
       
        if (is_join) {
-        interim_target = {table.interim_name, target_nodes, table.join_columns[0]};
+        interim_target = {table.interim_name, SelfNode::getNode(), table.join_columns[0]};
 
        } else {
-        interim_target = {table.interim_name, target_nodes};
+        interim_target = {table.interim_name, SelfNode::getNode()};
        }
        
 

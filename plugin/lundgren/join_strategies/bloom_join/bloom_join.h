@@ -78,7 +78,7 @@ static Distributed_query *make_one_sided_bloom_join_distributed_query(L_Parser_i
 
   bloom_join_query_string += " FROM " + filtered_remote_interim_name;
 
-  Interim_target stage2_interim_target = {remote_table->interim_name, {SelfNode::getNode()}, remote_join_column}; // index
+  Interim_target stage2_interim_target = {remote_table->interim_name, SelfNode::getNode(), remote_join_column}; // index
 
   for (auto &p : *remote_partitions) {
     Partition_query pq = {bloom_join_query_string, p.node, stage2_interim_target};
@@ -112,7 +112,7 @@ static Distributed_query *make_recursive_bloom_join_distributed_query(L_Parser_i
 
   recursive_distributed_join_query_string += generate_join_query_string(parser_info->tables, parser_info->where_clause, false);
 
-  Interim_target interim_target = {join_union_interim_table_name , {SelfNode::getNode()}};
+  Interim_target interim_target = {join_union_interim_table_name , SelfNode::getNode()};
 
   for (auto &p : *remote_partitions) {
     Partition_query pq = {recursive_distributed_join_query_string, p.node, interim_target};
