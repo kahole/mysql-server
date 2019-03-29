@@ -137,6 +137,13 @@ Distributed_query *execute_sort_merge_distributed_query(L_Parser_info *parser_in
 
               //merged_row_list[i*z+z].insert(merged_row_list[i*z+z].end(), lhs_matches[i].begin(), lhs_matches[i].end());
               //merged_row_list[i*z+z].insert(merged_row_list[i*z+z].end(), rhs_matches[z].begin(), rhs_matches[z].end());
+
+              auto insert = tbl.insert();
+              insert.values("ID#1", (int64_t)-9223372036854775807LL);
+              insert.values("ID#3", (int64_t)9223372036854775805LL);
+              insert.values("ID#4", (int64_t)9223372036854775806LL);
+              insert.execute();
+
               mysqlx::Row r;
               r.insert(r.end(), lhs_matches[i].begin(), lhs_matches[i].end());
               r.insert(r.end(), rhs_matches[z].begin(), rhs_matches[z].end());
