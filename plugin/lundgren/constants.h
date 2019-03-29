@@ -6,6 +6,8 @@
 
 #define PLUGIN_FLAG "distributed"
 
+#define BATCH_SIZE 999
+
 // SEMI (& bloom)
 #define IGNORE_TABLE_PARTITIONS_FLAG "ignore_table_partitions"
 
