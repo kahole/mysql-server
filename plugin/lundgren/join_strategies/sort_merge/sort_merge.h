@@ -134,14 +134,14 @@ Distributed_query *execute_sort_merge_distributed_query(L_Parser_info *parser_in
               // Kan gj;re insert.values(row) med row object i DQM! da slipper vi aa bygge opp en liste!!
               //        samme i bloom join slave
 
-              std::vector<mysqlx::Value&> merged_row;
+              std::vector<mysqlx::Value> merged_row;
               merged_row.reserve(lhs_num_columns + rhs_num_columns);
 
-              for (int lhs_c = 0; lhs_c < lhs_num_columns; lhs_c++) {
+              for (uint lhs_c = 0; lhs_c < lhs_num_columns; lhs_c++) {
                 merged_row.emplace_back(lhs_matches[i][lhs_c]);
               }
 
-              for (int rhs_c = 0; rhs_c < rhs_num_columns; rhs_c++) {
+              for (uint rhs_c = 0; rhs_c < rhs_num_columns; rhs_c++) {
                 merged_row.emplace_back(rhs_matches[i][rhs_c]);
               }
 
