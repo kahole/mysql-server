@@ -64,12 +64,12 @@ int connect_node(std::string node, Partition_query *pq) {
     
     mysqlx::Row row;
     while((row = res.fetchOne())) {
-      std::list<mysqlx::Row> row_list(1,row);
+      auto insert = table.insert();
       int n = BATCH_SIZE - 1;
       while(n-- && (row = res.fetchOne())){
-        row_list.push_back(row);
+        insert.values(row);
       }
-      table.insert().rows(row_list).execute();
+      insert.execute();
     }
 
     interim_session.close();
