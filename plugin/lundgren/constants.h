@@ -7,11 +7,13 @@
 #define PLUGIN_FLAG "distributed"
 
 #define BATCH_SIZE 100000
+#define BLOOM_SLAVE_BATCH_SIZE 100000
 
 // SEMI (& bloom)
 #define IGNORE_TABLE_PARTITIONS_FLAG "ignore_table_partitions"
 
 // BLOOM JOIN
+
 #define BLOOM_SLAVE_FLAG "bloom_slave"
 #define BLOOM_FILTER_FLAG "bloom_filter"
 #define BLOOM_FILTER_PARAMETER_COUNT_FLAG "filter_parameter_count"
