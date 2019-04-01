@@ -45,6 +45,8 @@ class SelfNode {
     if (!instance) {
       Internal_query_session *session = new Internal_query_session();
 
+      session->execute_resultless_query("USE test");
+
       // sjekk portnummer
       std::string port_number_query = "SELECT @@port;";
       Sql_resultset *result = session->execute_query(port_number_query.c_str());
