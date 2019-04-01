@@ -99,8 +99,7 @@ Distributed_query *execute_sort_merge_distributed_query(L_Parser_info *parser_in
 
     //-----------------------------------------------------
 
-
-    // Insertion into interim
+    // Merging and inserting into interim
     mysqlx::Session interim_session(generate_connection_string(SelfNode::getNode()));
 
     std::string create_interim_table_sql = "CREATE TABLE IF NOT EXISTS " + merge_joined_interim_name + " ";
@@ -135,7 +134,6 @@ Distributed_query *execute_sort_merge_distributed_query(L_Parser_info *parser_in
               for (uint lhs_c = 0; lhs_c < lhs_num_columns; lhs_c++) {
                 merged_row.set(lhs_c, lhs_matches[i][lhs_c]);
               }
-
               for (uint rhs_c = 0; rhs_c < rhs_num_columns; rhs_c++) {
                 merged_row.set(rhs_num_columns + rhs_c, rhs_matches[i][rhs_c]);
               }
@@ -207,27 +205,6 @@ std::string write_data_type_column(const mysqlx::Column& col) {
     return return_string;
 }
 
-// std::string write_typed_insert_value(const mysqlx::Columns *columns, mysqlx::Row row, uint i) {
-  
-//   std::string result_string = "";
-//   switch ((*columns)[i].getType()) {
-//   case mysqlx::Type::BIGINT :
-//     result_string += std::to_string(int64_t(row[i])); break;
-//   case mysqlx::Type::INT :
-//     result_string += std::to_string(int(row[i])); break;
-//   case mysqlx::Type::DECIMAL :
-//     result_string += std::to_string(double(row[i])); break;
-//   case mysqlx::Type::DOUBLE :
-//     result_string += std::to_string(double(row[i])); break;
-//   case mysqlx::Type::STRING :
-//     result_string += std::string("\"") + std::string(row[i]) + std::string("\"") ; break;
-//   default: break;
-//   }
-
-//   return result_string;
-// }
-
-
 std::string generate_joint_table_schema(mysqlx::SqlResult *lhs_res, mysqlx::SqlResult *rhs_res) {
   std::string return_string = "(";
   uint lhs_column_count = lhs_res->getColumnCount();
@@ -253,41 +230,6 @@ std::string generate_joint_table_schema(mysqlx::SqlResult *lhs_res, mysqlx::SqlR
   }
   return return_string + ")";
 }
-
-// std::string generate_joint_insert_rows_statement(std::vector<mysqlx::Row> lhs_rows, std::vector<mysqlx::Row> rhs_rows, mysqlx::SqlResult *lhs_res, mysqlx::SqlResult *rhs_res) {
-//   std::string result_string = "";
-
-//   const mysqlx::Columns *lhs_columns = &lhs_res->getColumns();
-//   const mysqlx::Columns *rhs_columns = &rhs_res->getColumns();
-//   uint lhs_column_count = lhs_res->getColumnCount();
-//   uint rhs_column_count = rhs_res->getColumnCount();
-
-//   for (uint i = 0; i < lhs_rows.size(); ++i) {
-//     for (uint z = 0; z < rhs_rows.size(); ++z) {
-//         result_string += "(";
-
-//         for (uint li = 0; li < lhs_column_count; ++li) {
-//             result_string += write_typed_insert_value(lhs_columns, lhs_rows[i], li);
-//             result_string += ",";
-//         }
-//         if (rhs_column_count == 0 && !lhs_column_count == 0) {
-//             result_string.pop_back();
-//         }
-
-//         for (uint ri = 0; ri < rhs_column_count; ++ri) {
-//             result_string += write_typed_insert_value(rhs_columns, rhs_rows[z], ri);
-//             result_string += ",";
-//         }
-//         if (!rhs_column_count == 0) {
-//             result_string.pop_back();
-//         }
-//         result_string += "),";
-//     }
-//   }
-
-//   result_string.pop_back();
-//   return result_string;
-// }
 
 std::string generate_projections_string_for_final_query(L_Table* table, std::string interim_name) {
 
