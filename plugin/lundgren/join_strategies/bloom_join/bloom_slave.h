@@ -61,7 +61,6 @@ Distributed_query *bloom_slave_execute_strategy(L_Parser_info *parser_info MY_AT
 
     mysqlx::Schema sch = s.getSchema(SelfNode::getNode().database);
     mysqlx::Table tbl = sch.getTable(filtered_interim_name);
-    /* std::list<mysqlx::Row> row_list; */
 
     mysqlx::Row row;
     const mysqlx::Columns *columns = &res.getColumns();
@@ -76,22 +75,21 @@ Distributed_query *bloom_slave_execute_strategy(L_Parser_info *parser_info MY_AT
       }
     }
 
+    int n = BLOOM_SLAVE_BATCH_SIZE;
     auto insert = tbl.insert();
-
-    //TODO: batch-inserts??
 
     while ((row = res.fetchOne())) {
       switch ((*columns)[filter_column_index].getType()) {
-        case mysqlx::Type::INT : 
+        case mysqlx::Type::INT:
           if (!filter.contains(int(row[filter_column_index]))) continue;
           break;
-        case mysqlx::Type::DECIMAL :
+        case mysqlx::Type::DECIMAL:
           if (!filter.contains(double(row[filter_column_index]))) continue;
           break;
-        case mysqlx::Type::DOUBLE : 
+        case mysqlx::Type::DOUBLE:
           if (!filter.contains(double(row[filter_column_index]))) continue;
           break;
-        case mysqlx::Type::STRING :
+        case mysqlx::Type::STRING:
           if (!filter.contains(std::string(row[filter_column_index]))) continue;
           break;
         default:
@@ -99,10 +97,16 @@ Distributed_query *bloom_slave_execute_strategy(L_Parser_info *parser_info MY_AT
       }
 
       insert.values(row);
-      /* row_list.push_back(row); */
-    }
 
-    /* tbl.insert().rows(row_list).execute(); */
+      if (n == 0) {
+        insert.execute();
+        insert = tbl.insert();
+        n = BLOOM_SLAVE_BATCH_SIZE;
+      } else {
+        n--;
+      }
+    }
+    // final batch
     insert.execute();
 
     s.close();
