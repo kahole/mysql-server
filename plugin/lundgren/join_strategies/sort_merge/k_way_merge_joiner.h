@@ -33,60 +33,6 @@ public:
     }
 };
 
-//----------------------
-// Alternative: simpler model heap with k children for the root, and switching out the root when reading next
-
-// class K_way_heap {
-// private:
-//     K_way_node *root;
-//     std::vector<K_way_node> children;
-//     int column_index;
-
-// public:
-//     K_way_heap() {}
-//     K_way_heap(std::vector<mysqlx::SqlResult*> streams, int c_index) {
-
-//         column_index = c_index;
-//         for (auto &s : streams) {
-//             children.push_back(K_way_node(s));
-//         }
-//         root = &children[0];
-//         correct_heap();
-//     }
-
-//     bool has_next() {
-//         for (auto &n : children) {
-//             if (!n.is_empty()) {
-//                 return true;
-//             }
-//         }
-//         return false;
-//     }
-
-//     mysqlx::Row pop() {
-//         mysqlx::Row tmp = root->next();
-//         correct_heap();
-//         return tmp;
-//     }
-
-//     mysqlx::Row peek() {
-//         return root->peek();
-//     }
-
-//     void correct_heap() {
-//         for (auto &n : children) {
-//             if (root->is_empty()) {
-//                 root = &n;
-//             }
-//             if (!n.is_empty() && ((int) n.peek()[column_index]) < ((int) root->peek()[column_index])) {
-//                 root = &n;
-//             }
-//         }
-//     }
-// };
-
-//--------------------
-
 class Bin_heap {
 
 private:
@@ -129,7 +75,7 @@ private:
 
         int smallest;
 
-        // Liker ikke at tomme noder propergerer nedover mot andre tomme noder, .. dette skjer vel bare ved siste sift_down kall uansett ^--^
+        // Don't like the fact that empty nodes propogate all the way down.. but it only happens for the last call to sift_down ^--^
         if (l <= heap_size && (node_empty(i) || (!node_empty(l) && at(l) < at(i)))) {
             smallest = l;
         } else {
