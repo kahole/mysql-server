@@ -161,6 +161,24 @@ INSERT INTO Iperson VALUES ("padme", "padme", "padme");
 INSERT INTO Iperson VALUES ("padme2", "padme", "padme");
 
 
+create table lhs (
+  lhs_1_1 INT,
+  lhs_50_50 INT,
+  lhs_few INT,
+  lhs_all_equal INT,
+  lhs_normal INT,
+  lhs_uniform INT
+);
+
+create table rhs (
+  rhs_1_1 INT,
+  rhs_50_50 INT,
+  rhs_few INT,
+  rhs_all_equal INT,
+  rhs_normal INT,
+  rhs_uniform INT
+);
+
 #--------------------------------------------------------------------------------------------------------
 # META DATA TABLES
 #--------------------------------------------------------------------------------------------------------
@@ -208,6 +226,9 @@ INSERT INTO lundgren_partition VALUES (2, 0, 3, "Planet");
 
 INSERT INTO lundgren_partition VALUES (55, 0, 2, "Iperson");
 INSERT INTO lundgren_partition VALUES (56, 0, 3, "Imovie");
+
+INSERT INTO lundgren_partition VALUES (77, 0, 2, "lhs");
+INSERT INTO lundgren_partition VALUES (78, 0, 3, "rhs");
 
 #--------------------------------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------------------------------
