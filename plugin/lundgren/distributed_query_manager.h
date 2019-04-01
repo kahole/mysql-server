@@ -65,6 +65,7 @@ int connect_node(std::string node, Partition_query *pq) {
     mysqlx::Row row;
     while((row = res.fetchOne())) {
       auto insert = table.insert();
+      insert.values(row);
       int n = BATCH_SIZE - 1;
       while(n-- && (row = res.fetchOne())){
         insert.values(row);
