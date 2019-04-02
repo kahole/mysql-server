@@ -140,6 +140,9 @@ public:
 
         lhs_buffer = new std::vector<mysqlx::Row>;
         rhs_buffer = new std::vector<mysqlx::Row>;
+
+        // lhs_buffer->reserve(100000);
+        // rhs_buffer->reserve(100000);
     }
 
     ~K_way_merge_joiner() {

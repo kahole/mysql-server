@@ -147,6 +147,7 @@ Distributed_query *execute_sort_merge_distributed_query(L_Parser_info *parser_in
 
           if (batch_counter <= 0) {
             insert.execute();
+            insert = table.insert();
             batch_counter = SORT_MERGE_BATCH_SIZE;
           }
         } else {
