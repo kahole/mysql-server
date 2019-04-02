@@ -112,30 +112,33 @@ Distributed_query *execute_sort_merge_distributed_query(L_Parser_info *parser_in
     
     K_way_merge_joiner merge_joiner = K_way_merge_joiner(lhs_streams, rhs_streams, lhs_join_column_index, rhs_join_column_index);
 
-    std::vector<mysqlx::Row> lhs_matches;
-    std::vector<mysqlx::Row> rhs_matches;
 
     std::string insert_into_interim_table_start = "INSERT INTO " + merge_joined_interim_name + " VALUES ";
 
     bool cont = true;
     while(cont) {
 
+        std::vector<mysqlx::Row>* lhs_matches;
+        std::vector<mysqlx::Row>* rhs_matches;
         std::tie(lhs_matches, rhs_matches) = merge_joiner.fetchNextMatches();
+        // std::tuple<std::vector<mysqlx::Row>&, std::vector<mysqlx::Row>&> tup = merge_joiner.fetchNextMatches();
+        // std::vector<mysqlx::Row>* lhs_matches = std::get<0>(tup);
+        // std::vector<mysqlx::Row>* rhs_matches = std::get<1>(tup);
 
-        if (lhs_matches.size() > 0 && rhs_matches.size() > 0) {
+        if (lhs_matches->size() > 0 && rhs_matches->size() > 0) {
 
           auto insert = table.insert();
 
-          for (uint i = 0; i < lhs_matches.size(); ++i) {
-            for (uint z = 0; z < rhs_matches.size(); ++z) {
+          for (uint i = 0; i < lhs_matches->size(); ++i) {
+            for (uint z = 0; z < rhs_matches->size(); ++z) {
 
               mysqlx::Row merged_row;
 
               for (uint lhs_c = 0; lhs_c < lhs_num_columns; lhs_c++) {
-                merged_row.set(lhs_c, lhs_matches[i][lhs_c]);
+                merged_row.set(lhs_c, (*lhs_matches)[i][lhs_c]);
               }
               for (uint rhs_c = 0; rhs_c < rhs_num_columns; rhs_c++) {
-                merged_row.set(rhs_num_columns + rhs_c, rhs_matches[i][rhs_c]);
+                merged_row.set(rhs_num_columns + rhs_c, (*rhs_matches)[i][rhs_c]);
               }
 
               insert.values(merged_row);
