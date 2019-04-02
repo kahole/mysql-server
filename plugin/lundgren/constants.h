@@ -25,7 +25,7 @@
 #define HASH_REDIST_SLAVE_FLAG "hash_redist_slave"
 
 // SORT MERGE
-#define SORT_MERGE_BUFFER_SIZE 1000
+#define SORT_MERGE_BATCH_SIZE 100000
 
 
 #endif  // LUNDGREN_CONSTANTS

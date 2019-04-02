@@ -115,19 +115,18 @@ Distributed_query *execute_sort_merge_distributed_query(L_Parser_info *parser_in
 
     std::string insert_into_interim_table_start = "INSERT INTO " + merge_joined_interim_name + " VALUES ";
 
+    auto insert = table.insert();
+
+    int batch_counter = SORT_MERGE_BATCH_SIZE;
+
     bool cont = true;
     while(cont) {
 
         std::vector<mysqlx::Row>* lhs_matches;
         std::vector<mysqlx::Row>* rhs_matches;
         std::tie(lhs_matches, rhs_matches) = merge_joiner.fetchNextMatches();
-        // std::tuple<std::vector<mysqlx::Row>&, std::vector<mysqlx::Row>&> tup = merge_joiner.fetchNextMatches();
-        // std::vector<mysqlx::Row>* lhs_matches = std::get<0>(tup);
-        // std::vector<mysqlx::Row>* rhs_matches = std::get<1>(tup);
 
         if (lhs_matches->size() > 0 && rhs_matches->size() > 0) {
-
-          auto insert = table.insert();
 
           for (uint i = 0; i < lhs_matches->size(); ++i) {
             for (uint z = 0; z < rhs_matches->size(); ++z) {
@@ -142,14 +141,21 @@ Distributed_query *execute_sort_merge_distributed_query(L_Parser_info *parser_in
               }
 
               insert.values(merged_row);
+              batch_counter--;
             }
           }
 
-          insert.execute();
-
+          if (batch_counter <= 0) {
+            insert.execute();
+            batch_counter = SORT_MERGE_BATCH_SIZE;
+          }
         } else {
           cont = false;
         }
+    }
+
+    if (batch_counter != SORT_MERGE_BATCH_SIZE) {
+      insert.execute();
     }
 
     interim_session.close();
