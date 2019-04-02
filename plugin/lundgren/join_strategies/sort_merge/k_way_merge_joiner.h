@@ -142,6 +142,11 @@ public:
         rhs_buffer = new std::vector<mysqlx::Row>;
     }
 
+    ~K_way_merge_joiner() {
+        delete lhs_buffer;
+        delete rhs_buffer;
+    }
+
     void buffer_next_value_candidates() {
 
         while (lhs_heap.has_next() && rhs_heap.has_next() && (lhs_buffer->size() == 0 || rhs_buffer->size() == 0)) {
