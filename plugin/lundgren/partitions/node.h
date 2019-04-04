@@ -31,13 +31,30 @@ struct Node {
   Node() {}
 };
 
+Node get_node_by_id(std::string id) {
+
+    Internal_query_session *session = new Internal_query_session();
+
+    session->execute_resultless_query("USE test");
+
+    std::string node_query = "SELECT host_l, port_l, database_l, username_l FROM lundgren_node WHERE id = " + id + ";";
+    Sql_resultset *result = session->execute_query(node_query.c_str());
+
+    if (result->get_rows() == 0) {
+      return Node(true);
+    }
+
+    return Node(result->getString(0), (uint)result->getLong(1), result->getString(2), result->getString(3), std::stoi(id));
+}
+
 class SelfNode {
   static SelfNode *instance;
   Node internal_node = Node(true);
 
-  SelfNode(uint port) {
+  SelfNode(uint port, std::string host) {
     internal_node = Node(true);
     internal_node.port = port;
+    internal_node.host = host;
   }
 
  public:
@@ -48,15 +65,16 @@ class SelfNode {
       session->execute_resultless_query("USE test");
 
       // sjekk portnummer
-      std::string port_number_query = "SELECT @@port;";
+      std::string port_number_query = "SELECT @@port, @@hostname;";
       Sql_resultset *result = session->execute_query(port_number_query.c_str());
       if (result->get_rows() == 0) {
         return Node(true);
       }
       // sett portnummer
       uint port_number = (uint)result->getLong(0) + 10;
+      std::string host = std::string(result->getString(1));
 
-      instance = new SelfNode(port_number);
+      instance = new SelfNode(port_number, host);
     }
     return instance->internal_node;
   }

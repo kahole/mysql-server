@@ -10,10 +10,13 @@
 
 // Semi join
 
+static bool has_ignore_partitions_arg_for_table(L_Table table, L_parsed_comment_args parsed_args);
+
 static std::string semi_join_generate_final_join_query_string(L_Table *stationary_table, L_Table *remote_table, std::string join_on);
 
+
 // n = 1
-static Distributed_query *make_one_sided_semi_join_distributed_query(L_Parser_info *parser_info MY_ATTRIBUTE((unused)), L_Table* stationary_table, L_Table* remote_table, std::vector<Partition>* remote_partitions) {
+static Distributed_query *make_one_sided_semi_join_distributed_query(L_Parser_info *parser_info, L_parsed_comment_args parsed_args, L_Table* stationary_table, L_Table* remote_table, std::vector<Partition>* remote_partitions) {
 
   //std::vector<L_Table> *tables = &(parser_info->tables);
   std::string where_clause = parser_info->where_clause;
@@ -65,8 +68,21 @@ static Distributed_query *make_one_sided_semi_join_distributed_query(L_Parser_in
 
   stages.push_back(stage2);
 
-  // Construct distributed query object
-  Distributed_query *dq = new Distributed_query{semi_join_generate_final_join_query_string(stationary_table, remote_table, where_clause), stages};
+
+  std::string final_query = semi_join_generate_final_join_query_string(stationary_table, remote_table, where_clause);
+
+  // Inside a recursive query, ship result directly to master!
+  if (parsed_args.comment_args_lookup_table.find(RECURSION_MASTER_ID) != parsed_args.comment_args_lookup_table.end()) {
+
+    Stage rec_push_stage;
+    Interim_target rec_push_stage_interim_target = {parsed_args.comment_args_lookup_table[RECURSION_MASTER_INTERIM_NAME], get_node_by_id(parsed_args.comment_args_lookup_table[RECURSION_MASTER_ID])};
+    Partition_query pq = {final_query, SelfNode::getNode(), rec_push_stage_interim_target};
+    stages.push_back(rec_push_stage);
+
+    final_query = "SELECT 1 WHERE FALSE;";
+  }
+
+  Distributed_query *dq = new Distributed_query{final_query, stages};
 
   delete remote_partitions;
 
@@ -86,16 +102,25 @@ static Distributed_query *make_recursive_semi_join_distributed_query(L_Parser_in
 
   //Distributed Partition queries
 
-  //  - sets ignore flag for the "remote_table"
-  //  - send query to every node in remote_partitions
-  //  - this avoids the "multiple" query problem
-  // TODO: brukt constants.h !!
   std::string recursive_distributed_join_query_string = "/*" PLUGIN_FLAG "<join_strategy=semi," IGNORE_TABLE_PARTITIONS_FLAG "=";
-  recursive_distributed_join_query_string += remote_table->name + ">*/";
+  recursive_distributed_join_query_string += remote_table->name + ",";
+  recursive_distributed_join_query_string += RECURSION_MASTER_INTERIM_NAME "=" + join_union_interim_table_name + ",";
+  // recursive_distributed_join_query_string += RECURSION_MASTER_HOSTNAME "=" + SelfNode::getNode().host + ",";
+  // recursive_distributed_join_query_string += RECURSION_MASTER_PORT "=" + std::to_string(SelfNode::getNode().port) + ">*/";
+
+                                                          // WARNING! Hardkodet til node id = 0
+  recursive_distributed_join_query_string += RECURSION_MASTER_ID "=";
+  recursive_distributed_join_query_string += "0>*/";
+
+
+  // TODO: (HOW TO FIX SEMI JOIN) akk samme gjelder BLOOM, er ingen forskjell!
+  // Add flag to make interim target the master node!
+  //   on the slave rewrite query to NO-OP and place results into master interim using the flag.
+  // remove the data gathering step below and keep everything else the same!
 
   recursive_distributed_join_query_string += generate_join_query_string(parser_info->tables, parser_info->where_clause, false);
 
-  Interim_target interim_target = {join_union_interim_table_name , {SelfNode::getNode()}};
+  Interim_target interim_target = {join_union_interim_table_name, {SelfNode::getNode()}};
 
   for (auto &p : *remote_partitions) {
     Partition_query pq = {recursive_distributed_join_query_string, p.node, interim_target};
@@ -166,7 +191,7 @@ static Distributed_query *make_semi_join_distributed_query(L_Parser_info *parser
   /* static Distributed_query *make_one_sided_semi_join_distributed_query(L_Parser_info *parser_info, L_Table* stationary_table, L_Table* remote_table, std::vector<Partition>* remote_partitions) { */
   if (has_stationary_table) {
     // n=1
-    return make_one_sided_semi_join_distributed_query(parser_info, stationary_table, remote_table, remote_partitions);
+    return make_one_sided_semi_join_distributed_query(parser_info, parsed_args, stationary_table, remote_table, remote_partitions);
     
   }
   else {

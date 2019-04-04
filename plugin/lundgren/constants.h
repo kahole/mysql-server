@@ -11,6 +11,10 @@
 
 // SEMI (& bloom)
 #define IGNORE_TABLE_PARTITIONS_FLAG "ignore_table_partitions"
+// #define RECURSION_MASTER_HOSTNAME "recursion_master_hostname"
+#define RECURSION_MASTER_ID "recursion_master_id"
+// #define RECURSION_MASTER_PORT "recursion_master_port"
+#define RECURSION_MASTER_INTERIM_NAME "recursion_master_interim_name"
 
 // BLOOM JOIN
 
