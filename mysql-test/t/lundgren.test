@@ -235,6 +235,10 @@ INSERT INTO lundgren_partition VALUES (78, 0, 3, "rhs");
 
 INSTALL PLUGIN lundgren SONAME 'lundgren.so';
 
+CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY '';
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'%';
+
+
 # SELECT ST_IsValid(NULL);
 
 #SHOW WARNINGS;
