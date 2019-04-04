@@ -106,8 +106,10 @@ Distributed_query *bloom_slave_execute_strategy(L_Parser_info *parser_info MY_AT
         n--;
       }
     }
-    // final batch
-    insert.execute();
+    if (n != BLOOM_SLAVE_BATCH_SIZE) {
+      // final batch
+      insert.execute();
+    }
 
     s.close();
 
