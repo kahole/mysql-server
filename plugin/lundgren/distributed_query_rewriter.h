@@ -154,7 +154,21 @@ static L_Parser_info *get_tables_from_parse_tree(MYSQL_THD thd) {
 
   L_Parser_info *parser_info = new L_Parser_info();
   parser_info->tables = tables;
-  parser_info->where_clause = where_clause;
+
+  if (where_clause.length() > 0) {
+
+    std::string clean_where_clause = tables[0].name + "." + tables[0].join_columns[0] + " = " + tables[1].name + "." + tables[1].join_columns[0];
+
+    // for (auto &table : tables) {
+    //   for (auto &join_column : table.join_columns) {
+    //     clean_where_clause = table.name + "." + join_column;
+    //   }
+    //   clean_where_clause += " = ";
+    // }
+
+    parser_info->where_clause = clean_where_clause;
+
+  }
 
   return parser_info;
 }
