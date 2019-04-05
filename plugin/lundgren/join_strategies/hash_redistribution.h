@@ -85,7 +85,7 @@ static Distributed_query *make_hash_redist_join_distributed_query(L_Parser_info 
             stage2.partition_queries.push_back(Partition_query{pq_sql_statement, node_id_to_node_obj[node.first], it});
         }
 
-        std::string final_query = "SELECT * FROM " + result_interim_table + ';';
+        std::string final_query = "SELECT * FROM " + result_interim_table; //+ ';';
         Distributed_query *dq = new Distributed_query{final_query, {stage1,stage2}};
         return dq;
     }
