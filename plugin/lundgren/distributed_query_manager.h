@@ -78,7 +78,7 @@ int connect_node(std::string node, Partition_query *pq) {
           }));
     }
 
-    std::for_each(workers.begin(), workers.end(), [](std::thread &t) {
+    std::for_each(insertion_workers.begin(), insertion_workers.end(), [](std::thread &t) {
         t.join();
       });
 
