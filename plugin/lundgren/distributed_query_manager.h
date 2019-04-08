@@ -63,19 +63,24 @@ int connect_node(std::string node, Partition_query *pq) {
     mysqlx::Table table = schema.getTable(pq->interim_target.interim_table_name);
 
     std::vector<std::thread> insertion_workers;
+    //std::vector<const mysqlx::TableInsert> inserts;
+    std::vector<mysqlx::TableInsert> inserts;
+    int insert_index = 0;
     
     mysqlx::Row row;
     while((row = res.fetchOne())) {
-      auto insert = table.insert();
-      insert.values(row);
+      //auto insert = table.insert();
+      inserts.push_back(table.insert());
+      inserts[insert_index].values(row);
       int n = BATCH_SIZE - 1;
       while(n-- && (row = res.fetchOne())){
-        insert.values(row);
+        inserts[insert_index].values(row);
       }
       
-      insertion_workers.push_back(std::thread([insert]() {
-            insert.execute();
+      insertion_workers.push_back(std::thread([&, insert_index]() {
+            inserts[insert_index].execute();
           }));
+      insert_index++;
     }
 
     std::for_each(insertion_workers.begin(), insertion_workers.end(), [](std::thread &t) {
