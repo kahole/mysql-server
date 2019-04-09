@@ -6,7 +6,7 @@
 
 #define PLUGIN_FLAG "distributed"
 
-#define BATCH_SIZE 100000
+#define BATCH_SIZE 20
 #define BLOOM_SLAVE_BATCH_SIZE 100000
 
 // SEMI (& bloom)

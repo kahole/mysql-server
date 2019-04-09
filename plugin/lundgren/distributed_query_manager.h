@@ -54,40 +54,52 @@ int connect_node(std::string node, Partition_query *pq) {
       table_schema += ", INDEX (" + pq->interim_target.index_name + "))";
     }
 
-    mysqlx::Session interim_session(generate_connection_string(pq->interim_target.node));
+    std::vector<std::thread> insertion_workers;
+    std::vector<mysqlx::Session> interim_sessions;
+    std::vector<mysqlx::Schema> interim_schemas;
+    std::vector<mysqlx::Table> interim_table_objects;
+    std::vector<mysqlx::TableInsert> inserts;
+
+    interim_sessions.emplace_back(mysqlx::Session(generate_connection_string(pq->interim_target.node)));
 
     std::string create_table_query = "CREATE TABLE IF NOT EXISTS " + pq->interim_target.interim_table_name + " " + table_schema + " " + INTERIM_TABLE_ENGINE ";";
-    interim_session.sql(create_table_query).execute();
+    interim_sessions[0].sql(create_table_query).execute();
 
-    mysqlx::Schema schema = interim_session.getSchema(pq->node.database);
+    mysqlx::Schema schema = interim_sessions[0].getSchema(pq->node.database);
     mysqlx::Table table = schema.getTable(pq->interim_target.interim_table_name);
 
-    std::vector<std::thread> insertion_workers;
-    //std::vector<const mysqlx::TableInsert> inserts;
-    std::vector<mysqlx::TableInsert> inserts;
-    int insert_index = 0;
-    
     mysqlx::Row row;
     while((row = res.fetchOne())) {
-      //auto insert = table.insert();
-      inserts.push_back(table.insert());
-      inserts[insert_index].values(row);
+
+      if (inserts.size() == 0) {
+        inserts.emplace_back(table.insert());
+      } else {
+        //push new session and table insert
+        interim_sessions.emplace_back(mysqlx::Session(generate_connection_string(pq->interim_target.node)));
+        interim_schemas.emplace_back(interim_sessions[interim_sessions.size()-1].getSchema(pq->node.database));
+        interim_table_objects.emplace_back(interim_schemas[interim_schemas.size()-1].getTable(pq->interim_target.interim_table_name));
+        inserts.emplace_back(interim_table_objects[interim_table_objects.size()-1].insert());
+      }
+
+      inserts[inserts.size()-1].values(row);
       int n = BATCH_SIZE - 1;
       while(n-- && (row = res.fetchOne())){
-        inserts[insert_index].values(row);
+        inserts[inserts.size()-1].values(row);
       }
-      
-      insertion_workers.push_back(std::thread([&, insert_index]() {
+      int insert_index = inserts.size()-1;
+      insertion_workers.emplace_back(std::thread([&, insert_index]() {
             inserts[insert_index].execute();
           }));
-      insert_index++;
     }
 
     std::for_each(insertion_workers.begin(), insertion_workers.end(), [](std::thread &t) {
         t.join();
       });
 
-    interim_session.close();
+    for (auto &s : interim_sessions) {
+      s.close();
+    }
+
   }
   s.close();
   return 0;
