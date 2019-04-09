@@ -6,3 +6,5 @@ $LUNDGREN_OPT
 --secure-file-priv=""
 
 --max-heap-table-size=4294967295
+
+--bulk_insert_buffer_size=4294967295

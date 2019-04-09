@@ -160,25 +160,37 @@ INSERT INTO Imovie VALUES ("padme2", "padme", "padme", "padme", 0, 0, 0, 0, "pad
 INSERT INTO Iperson VALUES ("padme", "padme", "padme");
 INSERT INTO Iperson VALUES ("padme2", "padme", "padme");
 
-
-create table lhs (
-  lhs_1_1 INT,
+CREATE TABLE IF NOT EXISTS lhs (
+  lhs_10_10 INT,
+  lhs_20_20 INT,
+  lhs_30_30 INT,
+  lhs_40_40 INT,
   lhs_50_50 INT,
-  lhs_few INT,
+  lhs_60_60 INT,
+  lhs_70_70 INT,
+  lhs_80_80 INT,
+  lhs_90_90 INT,
+  lhs_100_100 INT,
   lhs_all_equal INT,
   lhs_normal INT,
   lhs_uniform INT
 );
 
-create table rhs (
-  rhs_1_1 INT,
+CREATE TABLE IF NOT EXISTS rhs (
+  rhs_10_10 INT,
+  rhs_20_20 INT,
+  rhs_30_30 INT,
+  rhs_40_40 INT,
   rhs_50_50 INT,
-  rhs_few INT,
+  rhs_60_60 INT,
+  rhs_70_70 INT,
+  rhs_80_80 INT,
+  rhs_90_90 INT,
+  rhs_100_100 INT,
   rhs_all_equal INT,
   rhs_normal INT,
   rhs_uniform INT
 );
-
 #--------------------------------------------------------------------------------------------------------
 # META DATA TABLES
 #--------------------------------------------------------------------------------------------------------
