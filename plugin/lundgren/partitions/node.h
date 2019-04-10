@@ -51,19 +51,22 @@ Node getNodeById(std::string node_id) {
       node = Node(result->getString(1), (uint)result->getLong(2), result->getString(3), result->getString(4), result->getLong(0));
   } while (result->next());
 
+
+  delete session;
+
   return node;
-  //fiks self node med:
-  // SET @node_id = 0|1|2|3...; i oppstartsscriptene
 }
 
 class SelfNode {
   static SelfNode *instance;
   Node internal_node = Node(true);
 
-  SelfNode(uint port) {
-    internal_node = Node(true);
-    internal_node.port = port;
+  SelfNode(Node n) {
+    internal_node = n;
+    // internal_node.port = port;
   }
+
+  // SET @@global.node_id = 0|1|2|3...; i oppstartsscriptene
 
  public:
   static Node getNode() {
@@ -72,16 +75,27 @@ class SelfNode {
 
       session->execute_resultless_query("USE test");
 
-      // sjekk portnummer
-      std::string port_number_query = "SELECT @@port;";
-      Sql_resultset *result = session->execute_query(port_number_query.c_str());
+      // sjekk id
+      std::string id_number_query = "SELECT node_id FROM lundgren_self_node_id";
+      Sql_resultset *result = session->execute_query(id_number_query.c_str());
       if (result->get_rows() == 0) {
         return Node(true);
       }
       // sett portnummer
-      uint port_number = (uint)result->getLong(0) + 10;
+      //uint port_number = (uint)result->getLong(0) + 10;
+      std::string node_query = "SELECT * FROM lundgren_node WHERE lundgren_node.id = " + std::to_string(result->getLong(0));
+      Sql_resultset *node_result = session->execute_query(node_query.c_str());
+      if (node_result->get_rows() == 0) {
+          return Node(true);
+      }
+      Node node;
+      do {
+          node = Node(node_result->getString(1), (uint)node_result->getLong(2), node_result->getString(3), node_result->getString(4), node_result->getLong(0));
+      } while (node_result->next());
 
-      instance = new SelfNode(port_number);
+      instance = new SelfNode(node);
+
+      delete session;
     }
     return instance->internal_node;
   }

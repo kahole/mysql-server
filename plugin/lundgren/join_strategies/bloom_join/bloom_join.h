@@ -54,7 +54,7 @@ static Distributed_query *make_one_sided_bloom_join_distributed_query(L_Parser_i
   bloom_join_query_string += BLOOM_FILTERED_INTERIM_NAME_FLAG "=" + remote_table->interim_name + ",";
   bloom_join_query_string += BLOOM_FILTER_REMOTE_TABLE_FLAG "=" + remote_table->name + ",";
   bloom_join_query_string += BLOOM_FILTER_REMOTE_JOIN_COLUMN_FLAG "=" + remote_join_column + ",";
-  bloom_join_query_string += BLOOM_FILTER_MASTER_ID_FLAG "=0,";// + std::to_string(SelfNode::getNode().id) + ",";
+  bloom_join_query_string += BLOOM_FILTER_MASTER_ID_FLAG "=" + std::to_string(SelfNode::getNode().id) + ",";
   bloom_join_query_string += BLOOM_FILTER_PARAMETER_COUNT_FLAG "=" + std::to_string(bf_inserted_count) + ",";
   bloom_join_query_string += BLOOM_FILTER_FLAG "=" + bloom_filter_base64 + ">*/";
 
