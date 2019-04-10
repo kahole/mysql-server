@@ -41,9 +41,24 @@ Distributed_query *bloom_slave_execute_strategy(L_Parser_info *parser_info MY_AT
 
     std::string remote_table_name = parsed_args.comment_args_lookup_table[BLOOM_FILTER_REMOTE_TABLE_FLAG];
 
-    std::string query_for_filtering = "SELECT * FROM " + remote_table_name;
+    std::string master_node_id = parsed_args.comment_args_lookup_table[BLOOM_FILTER_MASTER_ID_FLAG];
 
-    std::string con_string = generate_connection_string(SelfNode::getNode());
+    std::string query_for_filtering = "SELECT ";
+    
+    L_Table remote_table = parser_info->tables[0];
+    std::vector<std::string>::iterator p = remote_table.projections.begin();
+
+    while (p != remote_table.projections.end()) {
+      query_for_filtering += remote_table_name + "." + *p;
+      ++p;
+      if (p != remote_table.projections.end()) query_for_filtering += ", ";
+    }
+    
+    query_for_filtering += " FROM " + remote_table_name;
+
+    Node master_node = getNodeById(master_node_id);
+
+    std::string con_string = generate_connection_string(master_node);
 
     mysqlx::Session s(con_string);
     mysqlx::SqlResult res = s.sql(query_for_filtering).execute();
@@ -113,8 +128,10 @@ Distributed_query *bloom_slave_execute_strategy(L_Parser_info *parser_info MY_AT
 
     s.close();
 
-    // Doesnt rewrite the query, just continue with the original after placing the data in the correct interim table
-    return NULL;
+    // rwrite to NO-OP
+    Distributed_query *dq = new Distributed_query{"DO 0;"};
+
+    return dq;
 }
 
 

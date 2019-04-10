@@ -30,7 +30,7 @@ static Distributed_query *make_one_sided_bloom_join_distributed_query(L_Parser_i
   std::vector<Stage> stages;
 
 
-  std::string filtered_remote_interim_name = generate_interim_name();
+  // std::string filtered_remote_interim_name = generate_interim_name();
   remote_table->interim_name = generate_interim_name();
 
   std::string stationary_join_column = stationary_table->join_columns[0];
@@ -51,9 +51,10 @@ static Distributed_query *make_one_sided_bloom_join_distributed_query(L_Parser_i
   std::string bloom_join_query_string = "/*" PLUGIN_FLAG "<join_strategy=bloom,";
   
   bloom_join_query_string += BLOOM_SLAVE_FLAG "=true,";
-  bloom_join_query_string += BLOOM_FILTERED_INTERIM_NAME_FLAG "=" + filtered_remote_interim_name + ",";
+  bloom_join_query_string += BLOOM_FILTERED_INTERIM_NAME_FLAG "=" + remote_table->interim_name + ",";
   bloom_join_query_string += BLOOM_FILTER_REMOTE_TABLE_FLAG "=" + remote_table->name + ",";
   bloom_join_query_string += BLOOM_FILTER_REMOTE_JOIN_COLUMN_FLAG "=" + remote_join_column + ",";
+  bloom_join_query_string += BLOOM_FILTER_MASTER_ID_FLAG "=0,";// + std::to_string(SelfNode::getNode().id) + ",";
   bloom_join_query_string += BLOOM_FILTER_PARAMETER_COUNT_FLAG "=" + std::to_string(bf_inserted_count) + ",";
   bloom_join_query_string += BLOOM_FILTER_FLAG "=" + bloom_filter_base64 + ">*/";
 
@@ -62,7 +63,7 @@ static Distributed_query *make_one_sided_bloom_join_distributed_query(L_Parser_i
   std::vector<std::string>::iterator p = remote_table->projections.begin();
 
   while (p != remote_table->projections.end()) {
-    bloom_join_query_string += filtered_remote_interim_name + "." + *p;
+    bloom_join_query_string += remote_table->name + "." + *p;
     ++p;
     if (p != remote_table->projections.end()) bloom_join_query_string += ", ";
   }
@@ -70,18 +71,18 @@ static Distributed_query *make_one_sided_bloom_join_distributed_query(L_Parser_i
     bloom_join_query_string += ", ";
   p = remote_table->where_transitive_projections.begin();
   while (p != remote_table->where_transitive_projections.end()) {
-    bloom_join_query_string += filtered_remote_interim_name + "." + *p;
+    bloom_join_query_string += remote_table->name + "." + *p;
     ++p;
     if (p != remote_table->where_transitive_projections.end())
       bloom_join_query_string += ", ";
   }
 
-  bloom_join_query_string += " FROM " + filtered_remote_interim_name;
+  bloom_join_query_string += " FROM " + remote_table->name;
 
-  Interim_target stage2_interim_target = {remote_table->interim_name, SelfNode::getNode(), remote_join_column}; // index
+  //Interim_target stage2_interim_target = {remote_table->interim_name, SelfNode::getNode(), remote_join_column}; // index
 
   for (auto &p : *remote_partitions) {
-    Partition_query pq = {bloom_join_query_string, p.node, stage2_interim_target};
+    Partition_query pq = {bloom_join_query_string, p.node}; //, stage2_interim_target};
     stage2.partition_queries.push_back(pq);
   }
 

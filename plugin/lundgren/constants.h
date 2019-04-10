@@ -20,6 +20,7 @@
 #define BLOOM_FILTERED_INTERIM_NAME_FLAG "filtered_interim_name"
 #define BLOOM_FILTER_REMOTE_TABLE_FLAG "remote_table_name"
 #define BLOOM_FILTER_REMOTE_JOIN_COLUMN_FLAG "remote_join_column"
+#define BLOOM_FILTER_MASTER_ID_FLAG "master_id"
 
 // HASH REDISTRIBUTION
 #define HASH_REDIST_SLAVE_FLAG "hash_redist_slave"

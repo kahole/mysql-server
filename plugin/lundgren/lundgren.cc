@@ -91,13 +91,14 @@ static int lundgren_start(MYSQL_THD thd, mysql_event_class_t event_class,
       int num_comment_args = 0;
       
       if (is_join) {
-        if (parser_info != NULL) {
-          parser_info->tables.pop_back(); //hack
-        }
 
         L_parsed_comment_args parsed_args = parse_query_comments(event_parse->query.str);
 
-	num_comment_args = parsed_args.comment_args_lookup_table.size();
+        if (parser_info != NULL && parser_info->tables.size() > 2) {
+          parser_info->tables.pop_back(); //hack
+        }
+
+	      num_comment_args = parsed_args.comment_args_lookup_table.size();
 
         switch(parsed_args.join_strategy) {
         case SEMI:
@@ -137,9 +138,9 @@ static int lundgren_start(MYSQL_THD thd, mysql_event_class_t event_class,
       //parsed_args.comment_args_lookup_table[BLOOM_SLAVE_FLAG]
       //IGNORE_TABLE_PARTITIONS_FLAG
       //HASH_REDIST_SLAVE_FLAG
-      if (num_comment_args == 0) {
-      	distributed_query->rewritten_query = "SELECT * FROM (" + distributed_query->rewritten_query + ") sub LIMIT 1;";
-      }
+      // if (num_comment_args == 0) {
+      // 	distributed_query->rewritten_query = "SELECT * FROM (" + distributed_query->rewritten_query + ") sub LIMIT 1;";
+      // }
 
       size_t query_length = distributed_query->rewritten_query.length();
 

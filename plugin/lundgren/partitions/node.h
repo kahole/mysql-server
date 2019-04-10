@@ -31,6 +31,31 @@ struct Node {
   Node() {}
 };
 
+Node getNodeById(std::string node_id) {
+  
+  Internal_query_session *session = new Internal_query_session();
+
+  session->execute_resultless_query("USE test");
+
+  std::string node_query = "SELECT * FROM lundgren_node WHERE lundgren_node.id = " + node_id;
+
+  Sql_resultset *result = session->execute_query(node_query.c_str());
+
+  if (result->get_rows() == 0) {
+      return NULL;
+  }
+
+  Node node;
+
+  do {
+      node = Node(result->getString(1), (uint)result->getLong(2), result->getString(3), result->getString(4), result->getLong(0));
+  } while (result->next());
+
+  return node;
+  //fiks self node med:
+  // SET @node_id = 0|1|2|3...; i oppstartsscriptene
+}
+
 class SelfNode {
   static SelfNode *instance;
   Node internal_node = Node(true);
