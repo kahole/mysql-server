@@ -141,8 +141,8 @@ public:
         lhs_buffer = new std::vector<mysqlx::Row>;
         rhs_buffer = new std::vector<mysqlx::Row>;
 
-        // lhs_buffer->reserve(100000);
-        // rhs_buffer->reserve(100000);
+        lhs_buffer->reserve(500000);
+        rhs_buffer->reserve(500000);
     }
 
     ~K_way_merge_joiner() {
@@ -181,11 +181,11 @@ public:
 
             // Buffer all values that are equal to the current value
             while (lhs_heap.has_next() && ((int)lhs_heap.peek()[lhs_column_index]) == current_value) {
-                lhs_buffer->push_back(lhs_heap.pop());
+                lhs_buffer->emplace_back(lhs_heap.pop());
             }
 
             while (rhs_heap.has_next() && ((int)rhs_heap.peek()[rhs_column_index]) == current_value) {
-                rhs_buffer->push_back(rhs_heap.pop());
+                rhs_buffer->emplace_back(rhs_heap.pop());
             }
         }
     }
