@@ -88,7 +88,7 @@ static int lundgren_start(MYSQL_THD thd, mysql_event_class_t event_class,
       Distributed_query* distributed_query;
 
       //for limiting output for testing
-        //int num_comment_args = 0;
+      //int num_comment_args = 0;
       
       if (is_join) {
 
@@ -98,7 +98,7 @@ static int lundgren_start(MYSQL_THD thd, mysql_event_class_t event_class,
           parser_info->tables.pop_back(); //hack
         }
 
-	      //num_comment_args = parsed_args.comment_args_lookup_table.size();
+	  //num_comment_args = parsed_args.comment_args_lookup_table.size();
 
         switch(parsed_args.join_strategy) {
         case SEMI:
