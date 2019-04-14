@@ -88,7 +88,7 @@ static int lundgren_start(MYSQL_THD thd, mysql_event_class_t event_class,
       Distributed_query* distributed_query;
 
       //for limiting output for testing
-      //int num_comment_args = 0;
+        //int num_comment_args = 0;
       
       if (is_join) {
 
