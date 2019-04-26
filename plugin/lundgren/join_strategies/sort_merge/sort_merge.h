@@ -104,8 +104,8 @@ Distributed_query *execute_sort_merge_distributed_query(L_Parser_info *parser_in
     create_interim_table_sql += generate_joint_table_schema(lhs_streams.at(0), rhs_streams.at(0));
 
     // WARNING! UNECESSARY INDEX FOR TESTING PURPOSES!
-    create_interim_table_sql.pop_back();
-    create_interim_table_sql += ", INDEX (" + lhs_join_column + "))"; // index
+    // create_interim_table_sql.pop_back();
+    // create_interim_table_sql += ", INDEX (" + lhs_join_column + "))"; // index
     
     create_interim_table_sql += std::string(" ") + INTERIM_TABLE_ENGINE ";";
 
