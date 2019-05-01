@@ -122,7 +122,7 @@ Distributed_query *execute_hash_redist_slave(L_Parser_info *parser_info, L_parse
         std::string table_join_column = table.substr(table.rfind(':')+1);
 
         std::string pq_sql_statement = "SELECT " + table_to_projection[table_name] + " FROM " + table_name + 
-            " WHERE MD5(" + table_join_column + ")%" + std::to_string(nodes_involved.size()) + '=';
+            " WHERE conv(substr(MD5(" + table_join_column + "), 1, 6), 16, 10)%" + std::to_string(nodes_involved.size()) + '=';
 
         for (auto node : nodes_involved) {
             Interim_target it = {interim_table_name, node.second, table_join_column};
