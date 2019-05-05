@@ -133,7 +133,6 @@ static Distributed_query *make_recursive_bloom_join_distributed_query(L_Parser_i
   delete remote_partitions;
 
   return dq;
-  // remember delete remote_partitions
 }
 
 static bool is_bloom_slave(L_parsed_comment_args parsed_args) {

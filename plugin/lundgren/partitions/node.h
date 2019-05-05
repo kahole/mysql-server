@@ -63,10 +63,9 @@ class SelfNode {
 
   SelfNode(Node n) {
     internal_node = n;
-    // internal_node.port = port;
   }
 
-  // SET @@global.node_id = 0|1|2|3...; i oppstartsscriptene
+  // SET @@global.node_id = 0|1|2|3...; in startup scripts
 
  public:
   static Node getNode() {

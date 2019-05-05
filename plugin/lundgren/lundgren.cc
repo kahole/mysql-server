@@ -28,10 +28,6 @@
 #include <mysql/service_mysql_alloc.h>
 #include <string.h>
 
-//#include <mysql/service_command.h>
-//#include <mysql/service_parser.h>
-//#include <mysql/service_srv_session.h>
-
 #include "my_inttypes.h"
 #include "my_psi_config.h"
 #include "my_thread.h"  // my_thread_handle needed by mysql_memory.h
@@ -39,7 +35,7 @@
 #include <iostream>
 
 #include "plugin/lundgren/distributed_query_manager.h"
-#include "plugin/lundgren/distributed_query_rewriter.h"
+#include "plugin/lundgren/parse_tree_walker.h"
 #include "plugin/lundgren/distributed_query.h"
 #include "plugin/lundgren/query_acceptance.h"
 #include "plugin/lundgren/join_strategies/data_to_query.h"
@@ -87,9 +83,6 @@ static int lundgren_start(MYSQL_THD thd, mysql_event_class_t event_class,
 
       Distributed_query* distributed_query;
 
-      //for limiting output for testing
-      //int num_comment_args = 0;
-      
       if (is_join) {
 
         L_parsed_comment_args parsed_args = parse_query_comments(event_parse->query.str);
@@ -97,8 +90,6 @@ static int lundgren_start(MYSQL_THD thd, mysql_event_class_t event_class,
         if (parser_info != NULL && parser_info->tables.size() > 2) {
           parser_info->tables.pop_back(); //hack
         }
-
-	//num_comment_args = parsed_args.comment_args_lookup_table.size();
 
         switch(parsed_args.join_strategy) {
         case SEMI:
@@ -128,32 +119,11 @@ static int lundgren_start(MYSQL_THD thd, mysql_event_class_t event_class,
           return 0;
       }
 
-      std::cout << distributed_query->rewritten_query << std::endl;
-
       execute_distributed_query(distributed_query);
 
-
-      // wrap query in limit 1 for testing purposes
-      // 	but dont do it for recursive steps!
-      //parsed_args.comment_args_lookup_table[BLOOM_SLAVE_FLAG]
-      //IGNORE_TABLE_PARTITIONS_FLAG
-      //HASH_REDIST_SLAVE_FLAG
-      //if (num_comment_args == 0) {
-      //	distributed_query->rewritten_query = "SELECT * FROM (" + distributed_query->rewritten_query + ") sub LIMIT 1;";
-      //}
-
       size_t query_length = distributed_query->rewritten_query.length();
-
       char *rewritten_query = static_cast<char *>(my_malloc(key_memory_lundgren, query_length+1, MYF(0)));
       memset(rewritten_query, 0, query_length+1);
-
-      // for (size_t i = 0; i < query_length; i++) {
-      //   rewritten_query[i] = distributed_query->rewritten_query[i];
-      // }
-
-      //rewritten_query[query_length] = '\0';
-
-      // sprintf(rewritten_query, "%s", distributed_query->rewritten_query.c_str());
 
       strncpy(rewritten_query, distributed_query->rewritten_query.c_str(), query_length);
 

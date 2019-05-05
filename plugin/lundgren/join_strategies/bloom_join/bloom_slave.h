@@ -34,8 +34,6 @@ Distributed_query *bloom_slave_execute_strategy(L_Parser_info *parser_info MY_AT
 
     bloom_filter filter = parse_bloom_filter(parsed_args);
 
-    //BLOOM_FILTERED_INTERIM_NAME_FLAG
-
     std::string filtered_interim_name = parsed_args.comment_args_lookup_table[BLOOM_FILTERED_INTERIM_NAME_FLAG];
     std::string join_column = parsed_args.comment_args_lookup_table[BLOOM_FILTER_REMOTE_JOIN_COLUMN_FLAG];
 
@@ -128,7 +126,7 @@ Distributed_query *bloom_slave_execute_strategy(L_Parser_info *parser_info MY_AT
 
     s.close();
 
-    // rwrite to NO-OP
+    // rewrite to NO-OP
     Distributed_query *dq = new Distributed_query{"DO 0;"};
 
     return dq;

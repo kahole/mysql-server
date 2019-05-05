@@ -24,10 +24,7 @@ static std::string generate_join_query_string(std::vector<L_Table> tables, std::
     std::vector<std::string>::iterator p = table.projections.begin();
       std::vector<std::string>::iterator a = table.aliases.begin();
 
-    // ALIAS? for like kolonnenavn? trengs det?
     while (p != table.projections.end()) {
-      // final_query_string  += ", " + (interim ? table.interim_name : table.name) + "." + *p + " as "
-      // + table.name + "." + *p;
       final_query_string += (interim ? table.interim_name : table.name) + "." + *p;
       final_query_string += a->length() > 0 ? " as " + *a: "";
       ++p;

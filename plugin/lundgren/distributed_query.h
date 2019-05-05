@@ -5,8 +5,6 @@
 #ifndef LUNDGREN_DISTRIBUTED_QUERY
 #define LUNDGREN_DISTRIBUTED_QUERY
 
-// Flytt til egen fil:
-
 struct L_Table {
   std::string name;
   std::string interim_name;
@@ -33,11 +31,8 @@ struct Interim_target {
 
 struct Partition_query {
   std::string sql_statement;
-  //std::string interim_table_name;
   Node node;
   Interim_target interim_target;
-    // Usikker på om prep_statements blir nyttig
-    //std::vector<std::string> prep_statements;
 };
 
 struct Stage {
@@ -46,13 +41,7 @@ struct Stage {
 
 struct Distributed_query {
     std::string rewritten_query;
-    //std::vector<Partition_query> *partition_queries;
     std::vector<Stage> stages;
 };
-
-// TODO: Lag cleanup funksjon
-// static void delete_distributed_query(Distributed_query *dq) {
-  
-// }
 
 #endif  // LUNDGREN_DISTRIBUTED_QUERY

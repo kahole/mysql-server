@@ -21,14 +21,6 @@ static bool is_hash_redist_slave(L_parsed_comment_args parsed_args) {
 static Distributed_query *make_hash_redist_join_distributed_query(L_Parser_info *parser_info, L_parsed_comment_args parsed_args, const char *original_query) {
 
     if (!is_hash_redist_slave(parsed_args)) {
-    
-        // STAGE 1
-        // - Hente tabellnavn
-        // - Finne ut hvor tabellene eksisterer (noder å involvere)
-        // - Generere interim table names for tabellene
-        // - Sparke i gang andre noder med flagg, litt som slave
-        // - Sende plan
-        // - "INSERT INTO interim_tabel (SELECT * FROM tabell WHERE MD5(join-kol) = node.id)"
         
         std::vector<Stage> stages;
 
@@ -69,12 +61,6 @@ static Distributed_query *make_hash_redist_join_distributed_query(L_Parser_info 
             pq_sql_statement += original_query_stripped.substr(original_query_stripped.find(comment_end) + std::string(comment_end).length());
             stage1.partition_queries.push_back(Partition_query{pq_sql_statement,node_id_to_node_obj[node.first]});
         }
-
-        // STAGE 2
-        // - Opprette interim table på master for å motta joinede resultater
-        // - Utføre join lokalt på hver node
-        // - Returnere resultat
-        // - Select * from interim table med resultat
 
         Stage stage2;
 

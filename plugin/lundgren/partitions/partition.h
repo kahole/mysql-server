@@ -87,6 +87,4 @@ INSERT INTO lundgren_partition VALUES (1, 1, 1, "Person");
 SELECT * FROM lundgren_partition p
 INNER JOIN lundgren_node n on p.nodeId = n.id
 INNER JOIN lundgren_shard_key s on p.shardKeyId = s.id;
-
-
 */

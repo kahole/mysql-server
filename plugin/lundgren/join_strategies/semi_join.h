@@ -86,10 +86,6 @@ static Distributed_query *make_recursive_semi_join_distributed_query(L_Parser_in
 
   //Distributed Partition queries
 
-  //  - sets ignore flag for the "remote_table"
-  //  - send query to every node in remote_partitions
-  //  - this avoids the "multiple" query problem
-  // TODO: brukt constants.h !!
   std::string recursive_distributed_join_query_string = "/*" PLUGIN_FLAG "<join_strategy=semi," IGNORE_TABLE_PARTITIONS_FLAG "=";
   recursive_distributed_join_query_string += remote_table->name + ">*/";
 
@@ -109,13 +105,11 @@ static Distributed_query *make_recursive_semi_join_distributed_query(L_Parser_in
   std::string final_query_string = "SELECT * FROM " + join_union_interim_table_name;
 
   // Construct distributed query object
-
   Distributed_query *dq = new Distributed_query{final_query_string, stages};
 
   delete remote_partitions;
 
   return dq;
-  // remember delete remote_partitions
 }
 
 static bool has_ignore_partitions_arg_for_table(L_Table table, L_parsed_comment_args parsed_args) {
@@ -174,8 +168,6 @@ static Distributed_query *make_semi_join_distributed_query(L_Parser_info *parser
     return make_recursive_semi_join_distributed_query(parser_info, remote_table, remote_partitions);
   }
 }
-
-// MAJOR HACK ALERT
 
 static std::string semi_join_generate_final_join_query_string(L_Table *stationary_table, L_Table *remote_table, std::string join_on) {
 

@@ -76,13 +76,7 @@ static Distributed_query *make_data_to_query_distributed_query(L_Parser_info *pa
     L_Table first_table = tables[0];
     std::vector<std::string>::iterator p = first_table.projections.begin();
 
-    // ALIAS trengs ikke her. Tror Person.blabla blir brukt dersom flere
-    // kolonner med samme navn, altså kun med flere tabeller final_query_string
-    // += first_table.interim_name + "." + *p + " as " + first_table.name + "."
-    // + *p;
     while (p != first_table.projections.end()) {
-      // final_query_string  += ", " + first_table.interim_name + "." + *p + "
-      // as " + first_table.name + "." + *p;
       final_query_string += first_table.interim_name + "." + *p;
       ++p;
       if (p != first_table.projections.end()) final_query_string += ", ";
@@ -91,7 +85,6 @@ static Distributed_query *make_data_to_query_distributed_query(L_Parser_info *pa
   }
 
   // Construct distributed query object
-
   Distributed_query *dq = new Distributed_query();
 
   Stage stage = {partition_queries};
