@@ -77,9 +77,9 @@ class SelfNode {
       // sjekk id
       std::string id_number_query = "SELECT node_id FROM lundgren_self_node_id";
       Sql_resultset *result = session->execute_query(id_number_query.c_str());
-      if (result->get_rows() == 0) {
-        return Node(true);
-      }
+      // if (result->get_rows() == 0) {
+      //   return Node(true);
+      // }
       // sett portnummer
       //uint port_number = (uint)result->getLong(0) + 10;
       std::string node_query = "SELECT * FROM lundgren_node WHERE lundgren_node.id = " + std::to_string(result->getLong(0));
@@ -89,7 +89,9 @@ class SelfNode {
       }
       Node node;
       do {
-          node = Node(node_result->getString(1), (uint)node_result->getLong(2), node_result->getString(3), node_result->getString(4), node_result->getLong(0));
+          // node = Node(node_result->getString(1), (uint)node_result->getLong(2), node_result->getString(3), node_result->getString(4), node_result->getLong(0));
+          char* local = (char*)"localhost";
+          node = Node(local, (uint)node_result->getLong(2), node_result->getString(3), node_result->getString(4), node_result->getLong(0));
       } while (node_result->next());
 
       instance = new SelfNode(node);
