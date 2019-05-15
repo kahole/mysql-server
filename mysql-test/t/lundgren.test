@@ -230,6 +230,8 @@ CREATE TABLE lundgren_self_node_id (
 
 INSERT INTO lundgren_node VALUES (0, "atum08.no.oracle.com", 13010, "test", "root", NULL);
 INSERT INTO lundgren_node VALUES (1, "atum29.no.oracle.com", 13010, "test", "root", NULL);
+INSERT INTO lundgren_node VALUES (2, "atum08.no.oracle.com", 13110, "test", "root", NULL);
+INSERT INTO lundgren_node VALUES (3, "atum29.no.oracle.com", 13110, "test", "root", NULL);
 
 #INSERT INTO lundgren_shard_key VALUES (1, "height", 0, 165);
 INSERT INTO lundgren_shard_key VALUES (2, "height", 165, 500);
@@ -246,6 +248,12 @@ INSERT INTO lundgren_partition VALUES (78, 0, 3, "rhs");
 
 INSERT INTO lundgren_partition VALUES (79, 1, 2, "lhs");
 INSERT INTO lundgren_partition VALUES (80, 1, 3, "rhs");
+
+INSERT INTO lundgren_partition VALUES (79, 2, 2, "lhs");
+INSERT INTO lundgren_partition VALUES (80, 2, 3, "rhs");
+
+INSERT INTO lundgren_partition VALUES (79, 3, 2, "lhs");
+INSERT INTO lundgren_partition VALUES (80, 3, 3, "rhs");
 
 #--------------------------------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------------------------------
