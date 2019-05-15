@@ -249,19 +249,17 @@ INSERT INTO lundgren_partition VALUES (78, 0, 3, "rhs");
 INSERT INTO lundgren_partition VALUES (79, 1, 2, "lhs");
 INSERT INTO lundgren_partition VALUES (80, 1, 3, "rhs");
 
-INSERT INTO lundgren_partition VALUES (79, 2, 2, "lhs");
-INSERT INTO lundgren_partition VALUES (80, 2, 3, "rhs");
+INSERT INTO lundgren_partition VALUES (81, 2, 2, "lhs");
+INSERT INTO lundgren_partition VALUES (82, 2, 3, "rhs");
 
-INSERT INTO lundgren_partition VALUES (79, 3, 2, "lhs");
-INSERT INTO lundgren_partition VALUES (80, 3, 3, "rhs");
+INSERT INTO lundgren_partition VALUES (83, 3, 2, "lhs");
+INSERT INTO lundgren_partition VALUES (84, 3, 3, "rhs");
 
 #--------------------------------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------------------------------
 
 CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED WITH mysql_native_password BY '';
 GRANT ALL PRIVILEGES ON *.* TO 'root'@'%';
-
-INSERT INTO lundgren_self_node_id VALUES (0);
 
 INSTALL PLUGIN lundgren SONAME 'lundgren.so';
 
